@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+{% load static querytools %}
+
+{% block title %}Citas{% endblock %}
+
+{% block page_summary %}
+  {% if summary %}
+  <div class="page-summary">
+    <div class="summary-card">
+      <p class="summary-card__title">Citas filtradas</p>
+      <p class="summary-card__value">{{ summary.total }}</p>
+      <div class="summary-card__meta">
+        <span class="summary-badge"><i class="bi bi-calendar-range"></i> Total</span>
+        <span>Resultados seg&uacute;n filtros activos.</span>
+      </div>
+    </div>
+    <div class="summary-card">
+      <p class="summary-card__title">En seguimiento</p>
+      <p class="summary-card__value">{{ summary.activas }}</p>
+      <div class="summary-card__meta">
+        <span class="summary-badge"><i class="bi bi-lightning-charge"></i> Pendientes &amp; proceso</span>
+      </div>
+    </div>
+    <div class="summary-card is-success">
+      <p class="summary-card__title">Completadas</p>
+      <p class="summary-card__value">{{ summary.completadas }}</p>
+      <div class="summary-card__meta">
+        <span class="summary-badge"><i class="bi bi-check-circle"></i> Hist&oacute;rico</span>
+      </div>
+    </div>
+    <div class="summary-card is-danger">
+      <p class="summary-card__title">Canceladas</p>
+      <p class="summary-card__value">{{ summary.canceladas }}</p>
+      <div class="summary-card__meta">
+        <span class="summary-badge"><i class="bi bi-slash-circle"></i> Descartadas</span>
+      </div>
+    </div>
+    {% if next_cita %}
+    <div class="summary-card is-info">
+      <p class="summary-card__title">Pr&oacute;xima cita</p>
+      <p class="summary-card__value">{{ next_cita.fecha_inicio|date:"d/m" }} · {{ next_cita.fecha_inicio|time:"H:i" }}</p>
+      <div class="summary-card__meta">
+        <span class="summary-badge"><i class="bi bi-person"></i> {{ next_cita.cliente|default:"-" }}</span>
+        <span>{{ next_cita.get_estado_display|default:"-" }}</span>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+{% endblock %}
+
+{% block page_toolbar %}
+<div class="page-toolbar">
+  <div>
+    <h2 class="page-toolbar__title mb-1">Agenda de citas</h2>
+    <p class="text-muted small mb-0">Gestiona la programaci&oacute;n diaria con filtros r&aacute;pidos y acci&oacute;n inmediata.</p>
+  </div>
+  <div class="page-toolbar__actions">
+    {% if request.GET %}
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'citas:list' %}">
+        <i class="bi bi-arrow-counterclockwise"></i> Limpiar
+      </a>
+    {% endif %}
+    <a class="btn btn-outline-success btn-sm" href="{% url 'citas:export' %}?{% keep_query_except 'page' 'o' %}">
+      <i class="bi bi-download"></i> Exportar CSV
+    </a>
+    <a class="btn btn-primary btn-sm" href="{% url 'citas:create' %}">
+      <i class="bi bi-plus-circle"></i> Nueva cita
+    </a>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<form method="get" class="card card-body shadow-sm mb-4">
+  <div class="row g-3 align-items-end">
+    <div class="col-12 col-lg-4">
+      <label class="form-label text-muted text-uppercase small" for="id_q">Buscar</label>
+      <div class="input-group input-group-sm">
+        <span class="input-group-text"><i class="bi bi-search"></i></span>
+        <input id="id_q" type="text" name="q" class="form-control" placeholder="Cliente, placa, servicio o nota" value="{{ q }}">
+      </div>
+    </div>
+    <div class="col-12 col-sm-6 col-lg-2">
+      <label class="form-label text-muted text-uppercase small" for="id_estado">Estado</label>
+      <select id="id_estado" name="estado" class="form-select form-select-sm">
+        <option value="">Todos</option>
+        {% for value, label in ESTADOS %}
+          <option value="{{ value }}" {% if estado == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-12 col-sm-6 col-lg-2">
+      <label class="form-label text-muted text-uppercase small" for="id_desde">Desde</label>
+      <input id="id_desde" type="date" name="desde" class="form-control form-control-sm" value="{{ desde }}">
+    </div>
+    <div class="col-12 col-sm-6 col-lg-2">
+      <label class="form-label text-muted text-uppercase small" for="id_hasta">Hasta</label>
+      <input id="id_hasta" type="date" name="hasta" class="form-control form-control-sm" value="{{ hasta }}">
+    </div>
+    <div class="col-12 col-sm-6 col-lg-2 d-grid">
+      <button class="btn btn-primary btn-sm" type="submit">
+        <i class="bi bi-funnel"></i> Aplicar
+      </button>
+    </div>
+  </div>
+</form>
+
+<div class="card shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0 align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>Cliente</th>
+          <th>Veh&iacute;culo</th>
+          <th>Servicio</th>
+          <th class="text-nowrap">
+            <a class="text-decoration-none" href="?{% toggle_order 'fecha_inicio' %}">
+              Inicio
+            </a>
+          </th>
+          <th class="text-nowrap">Fin</th>
+          <th>Estado</th>
+          <th class="text-end">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if object_list %}
+          {% for cita in object_list %}
+          <tr>
+            <td>{{ cita.cliente|default:"-" }}</td>
+            <td>{{ cita.vehiculo|default:"-" }}</td>
+            <td>{{ cita.servicio|default:"-" }}</td>
+            <td>
+              <span class="d-block fw-semibold">{{ cita.fecha_inicio|date:"Y-m-d" }}</span>
+              <span class="text-muted small">{{ cita.fecha_inicio|time:"H:i" }}</span>
+            </td>
+            <td>
+              {% if cita.fecha_fin %}
+                <span class="d-block fw-semibold">{{ cita.fecha_fin|date:"Y-m-d" }}</span>
+                <span class="text-muted small">{{ cita.fecha_fin|time:"H:i" }}</span>
+              {% else %}
+                <span class="text-muted">-</span>
+              {% endif %}
+            </td>
+            <td>
+              <span class="badge
+                {% if cita.estado == 'pendiente' %} text-bg-warning
+                {% elif cita.estado == 'en_proceso' %} text-bg-info
+                {% elif cita.estado == 'completada' %} text-bg-success
+                {% elif cita.estado == 'cancelada' %} text-bg-secondary
+                {% else %} text-bg-light
+                {% endif %}">
+                {{ cita.get_estado_display }}
+              </span>
+            </td>
+            <td class="text-end text-nowrap">
+              <a class="btn btn-sm btn-outline-primary" href="{% url 'citas:detail' cita.pk %}"><i class="bi bi-eye"></i></a>
+              <a class="btn btn-sm btn-outline-secondary" href="{% url 'citas:update' cita.pk %}"><i class="bi bi-pencil"></i></a>
+              <a class="btn btn-sm btn-outline-danger" href="{% url 'citas:delete' cita.pk %}"><i class="bi bi-trash"></i></a>
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="7" class="text-center text-muted py-4">No hay citas que coincidan con los filtros seleccionados.</td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if is_paginated %}
+    <div class="card-footer bg-white">
+      <nav aria-label="Paginaci&oacute;n">
+        <ul class="pagination mb-0 justify-content-end">
+          {% if page_obj.has_previous %}
+            <li class="page-item">
+              <a class="page-link" href="?{% keep_query page=page_obj.previous_page_number %}" aria-label="Anterior">
+                &laquo;
+              </a>
+            </li>
+          {% else %}
+            <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+          {% endif %}
+
+          {% for num in page_obj.paginator.page_range %}
+            {% if num == page_obj.number %}
+              <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+            {% else %}
+              <li class="page-item"><a class="page-link" href="?{% keep_query page=num %}">{{ num }}</a></li>
+            {% endif %}
+          {% endfor %}
+
+          {% if page_obj.has_next %}
+            <li class="page-item">
+              <a class="page-link" href="?{% keep_query page=page_obj.next_page_number %}" aria-label="Siguiente">
+                &raquo;
+              </a>
+            </li>
+          {% else %}
+            <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+          {% endif %}
+        </ul>
+      </nav>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

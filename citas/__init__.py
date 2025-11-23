@@ -1,0 +1,1 @@
+"""Citas app initialization."""

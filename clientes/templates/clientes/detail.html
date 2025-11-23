@@ -1,0 +1,315 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}{{ cliente.nombre }}{% endblock %}
+
+{% block extra_head %}
+<style>
+.hero-card {
+  border: 0;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(13, 110, 253, 0.92), rgba(32, 201, 151, 0.85));
+  color: #fff;
+}
+.metric-pill {
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  padding: 0.5rem 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.timeline::before {
+  content: "";
+  position: absolute;
+  left: 11px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: rgba(13, 110, 253, 0.15);
+}
+.timeline-item {
+  position: relative;
+  padding-left: 32px;
+}
+.timeline-item::before {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 6px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #0d6efd;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-4">
+  <div>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-2">
+        <li class="breadcrumb-item"><a href="{% url 'clientes:list' %}">Clientes</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ cliente.nombre }}</li>
+      </ol>
+    </nav>
+    <h1 class="h3 mb-0">{{ cliente.nombre }}</h1>
+  </div>
+  <div class="btn-group">
+    <a class="btn btn-outline-secondary btn-sm" href="{% url 'clientes:list' %}">
+      <i class="bi bi-arrow-left-short me-1"></i> Volver
+    </a>
+    <a class="btn btn-outline-primary btn-sm" href="{% url 'clientes:edit' cliente.pk %}">
+      <i class="bi bi-pencil-square me-1"></i> Editar
+    </a>
+    <a class="btn btn-outline-danger btn-sm" href="{% url 'clientes:delete' cliente.pk %}">
+      <i class="bi bi-trash me-1"></i> Eliminar
+    </a>
+  </div>
+</div>
+
+<div class="hero-card shadow-sm p-4 mb-4">
+  <div class="row gy-3 align-items-center">
+    <div class="col-md-7">
+      <div class="d-flex flex-wrap align-items-center gap-3">
+        <span class="badge bg-light text-dark text-uppercase">{{ cliente.tipo_display }}</span>
+        {% if cliente.documento %}
+          <span class="metric-pill">
+            <i class="bi bi-credit-card"></i> {{ cliente.documento }}
+          </span>
+        {% endif %}
+        <span class="metric-pill">
+          <i class="bi bi-calendar-check"></i> Cliente desde {{ cliente.creado|date:"Y-m-d" }}
+        </span>
+      </div>
+      <div class="mt-3">
+        {% if cliente.direccion %}
+          <div><i class="bi bi-geo-alt me-1"></i> {{ cliente.direccion }}</div>
+        {% endif %}
+        <div>
+          <i class="bi bi-award me-1"></i> Origen: {{ cliente.get_origen_display }}
+        </div>
+      </div>
+    </div>
+    <div class="col-md-5 text-md-end">
+      <div class="d-flex flex-column flex-md-row justify-content-end gap-2">
+        {% if cliente.telefono %}
+          <a class="btn btn-light btn-sm" href="tel:{{ cliente.telefono|urlencode }}">
+            <i class="bi bi-telephone me-1"></i> Llamar
+          </a>
+        {% endif %}
+        {% if cliente.email %}
+          <a class="btn btn-outline-light btn-sm" href="mailto:{{ cliente.email|urlencode }}">
+            <i class="bi bi-envelope me-1"></i> Escribir
+          </a>
+        {% endif %}
+        <form method="post" action="{{ touch_url }}">
+          {% csrf_token %}
+          <button class="btn btn-outline-light btn-sm" type="submit">
+            <i class="bi bi-check2-circle me-1"></i> Registrar contacto
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if cliente_loyalty %}
+<div class="card border-0 shadow-sm mb-4 loyalty-summary">
+  <div class="card-body p-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+      <div>
+        <div class="text-uppercase small text-muted">Puntos acumulados</div>
+        <div class="display-6 fw-semibold text-primary">{{ cliente_loyalty.saldo|intcomma }} pts</div>
+        {% if cliente_loyalty.proximo_nivel %}
+          <div class="text-muted small mb-2">A {{ cliente_loyalty.proximo_nivel.restantes|intcomma }} pts de {{ cliente_loyalty.proximo_nivel.nombre }}.</div>
+        {% endif %}
+      </div>
+      <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-outline-primary btn-sm" href="{% url 'fidelizacion:historial_cliente' cliente.id %}">Ver historial</a>
+        <a class="btn btn-primary btn-sm" href="{% url 'fidelizacion:ajustar_cliente' cliente.id %}">Ajustar / bonificar</a>
+      </div>
+    </div>
+    {% if cliente_loyalty.historial_preview %}
+      <hr class="my-3">
+      <div class="small text-muted text-uppercase mb-2">Últimos movimientos</div>
+      <ul class="list-unstyled mb-0">
+        {% for mov in cliente_loyalty.historial_preview %}
+          <li class="d-flex justify-content-between gap-3 py-1 border-bottom">
+            <span>
+              <strong>{{ mov.get_tipo_display }}</strong>
+              <small class="text-muted">· {{ mov.fecha|date:"Y-m-d H:i" }}</small>
+              {% if mov.motivo %}<br><span class="text-muted">{{ mov.motivo }}</span>{% endif %}
+            </span>
+            <span class="text-end">
+              {% if mov.puntos_ganados %}<span class="text-success">+{{ mov.puntos_ganados|intcomma }}</span>{% endif %}
+              {% if mov.puntos_usados %}<span class="text-danger">-{{ mov.puntos_usados|intcomma }}</span>{% endif %}
+              <div class="text-muted small">Saldo {{ mov.saldo_resultante|intcomma }}</div>
+            </span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<div class="row g-4">
+  <div class="col-lg-7">
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body">
+        <h2 class="h6 text-uppercase text-muted mb-3">Información de contacto</h2>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="p-3 bg-light rounded">
+              <div class="text-muted small text-uppercase">Teléfono</div>
+              <div class="fw-semibold">
+                {% if cliente.telefono %}
+                  <a class="text-decoration-none" href="tel:{{ cliente.telefono|urlencode }}">{{ cliente.telefono }}</a>
+                {% else %}
+                  <span class="text-muted">Sin registrar</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="p-3 bg-light rounded">
+              <div class="text-muted small text-uppercase">Email</div>
+              <div class="fw-semibold">
+                {% if cliente.email %}
+                  <a class="text-decoration-none" href="mailto:{{ cliente.email|urlencode }}">{{ cliente.email }}</a>
+                {% else %}
+                  <span class="text-muted">Sin registrar</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="row g-3 mt-1">
+          <div class="col-md-6">
+            <div class="p-3 bg-light rounded">
+              <div class="text-muted small text-uppercase">Último contacto</div>
+              <div class="fw-semibold">
+                {% if cliente.ultimo_contacto %}
+                  {{ cliente.ultimo_contacto|date:"Y-m-d H:i" }}
+                {% else %}
+                  <span class="text-muted">Sin registro</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="p-3 bg-light rounded">
+              <div class="text-muted small text-uppercase">Notas internas</div>
+              <div class="fw-semibold">
+                {{ cliente.notas|default:"Sin notas" }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h2 class="h6 text-uppercase text-muted mb-0">Vehículos</h2>
+          <a class="btn btn-link btn-sm text-decoration-none" href="{% url 'vehiculos:list' %}?cliente={{ cliente.id }}">
+            Ver todos
+          </a>
+        </div>
+        {% if vehiculos %}
+          <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Placa</th>
+                  <th>Marca/Modelo</th>
+                  <th>Año</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for v in vehiculos %}
+                  <tr>
+                    <td>{{ v.placa }}</td>
+                    <td>{{ v.marca }} {{ v.modelo }}</td>
+                    <td>{{ v.anio|default:"-" }}</td>
+                    <td>
+                      <a class="btn btn-outline-secondary btn-sm" href="{% url 'vehiculos:detail' v.pk %}">Ver</a>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <p class="text-muted mb-0">Sin vehículos registrados.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body">
+        <h2 class="h6 text-uppercase text-muted mb-3">Citas recientes</h2>
+        {% if proxima_cita %}
+          <div class="alert alert-info mb-3" role="alert">
+            <i class="bi bi-calendar-event me-1"></i>
+            Próxima cita: {{ proxima_cita.fecha_inicio|date:"Y-m-d H:i" }} · {{ proxima_cita.servicio.nombre }}
+          </div>
+        {% endif %}
+        {% if citas %}
+          <div class="timeline position-relative">
+            {% for cita in citas %}
+              <div class="timeline-item mb-4">
+                <div class="d-flex justify-content-between">
+                  <div>
+                    <div class="fw-semibold">{{ cita.servicio.nombre }}</div>
+                    <div class="text-muted small">
+                      {{ cita.fecha_inicio|date:"Y-m-d H:i" }}
+                      {% if cita.vehiculo %}
+                        · {{ cita.vehiculo.placa }}
+                      {% endif %}
+                    </div>
+                    {% if cita.descripcion %}
+                      <div class="text-muted small">{{ cita.descripcion|truncatewords:20 }}</div>
+                    {% endif %}
+                  </div>
+                  <span class="badge text-bg-light text-uppercase">{{ cita.estado }}</span>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-muted mb-0">Sin citas registradas.</p>
+        {% endif %}
+        <div class="mt-3">
+          <a class="btn btn-outline-primary btn-sm" href="{% url 'citas:create' %}?cliente={{ cliente.id }}">
+            <i class="bi bi-plus-circle me-1"></i> Agendar cita
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <h2 class="h6 text-uppercase text-muted mb-3">Acciones rápidas</h2>
+        <div class="d-grid gap-2">
+          <a class="btn btn-outline-secondary" href="{% url 'vehiculos:create' %}">
+            <i class="bi bi-car-front me-1"></i> Registrar nuevo vehículo
+          </a>
+          <a class="btn btn-outline-secondary" href="{% url 'citas:list' %}?cliente={{ cliente.id }}">
+            <i class="bi bi-journal-text me-1"></i> Ver historial de citas
+          </a>
+          <button class="btn btn-outline-secondary" type="button" onclick="navigator.clipboard.writeText('{{ cliente.nombre }} - {{ cliente.telefono|default:'' }}');">
+            <i class="bi bi-clipboard me-1"></i> Copiar contacto
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

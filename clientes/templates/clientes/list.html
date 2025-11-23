@@ -1,0 +1,356 @@
+{% extends "base.html" %}
+
+{% block title %}Clientes{% endblock %}
+
+{% block extra_head %}
+<style>
+.stat-card {
+  border: 0;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(13, 110, 253, 0.08), rgba(111, 66, 193, 0.08));
+}
+.stat-card .icon-circle {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.78rem;
+  background: rgba(13, 110, 253, 0.12);
+  color: #0d6efd;
+}
+.status-pill.inactivo {
+  background: rgba(220, 53, 69, 0.12);
+  color: #dc3545;
+}
+.status-pill.pendiente {
+  background: rgba(255, 193, 7, 0.18);
+  color: #ff9f0a;
+}
+.table thead th {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #6c757d;
+  border-top: 0;
+  border-bottom-width: 1px;
+}
+.badge-soft {
+  background-color: rgba(13, 110, 253, 0.15);
+  color: #0d6efd;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-4">
+  <div>
+    <h1 class="h3 mb-1">Clientes</h1>
+    <p class="text-muted mb-0">Gestiona el directorio de clientes con filtros inteligentes y métricas clave.</p>
+  </div>
+  <div class="d-flex gap-2">
+    {% if has_filters %}
+      <a class="btn btn-outline-secondary" href="{% url 'clientes:list' %}">
+        <i class="bi bi-x-circle me-1"></i> Limpiar filtros
+      </a>
+    {% endif %}
+    <a class="btn btn-outline-primary" href="{% url 'clientes:export' %}?{% if query_string %}{{ query_string }}{% endif %}">
+      <i class="bi bi-download me-1"></i> Exportar CSV
+    </a>
+    <a class="btn btn-primary" href="{% url 'clientes:create' %}">
+      <i class="bi bi-plus-circle me-1"></i> Nuevo cliente
+    </a>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-12 col-lg-3">
+    <div class="card stat-card shadow-sm h-100">
+      <div class="card-body d-flex align-items-center justify-content-between">
+        <div>
+          <div class="text-muted text-uppercase small mb-1">Clientes</div>
+          <div class="h4 mb-0">{{ summary.total }}</div>
+          <div class="text-muted small">{{ summary.empresas }} empresas / {{ summary.personas }} personas</div>
+        </div>
+        <span class="icon-circle bg-primary text-white">
+          <i class="bi bi-people"></i>
+        </span>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-lg-3">
+    <div class="card stat-card shadow-sm h-100">
+      <div class="card-body d-flex align-items-center justify-content-between">
+        <div>
+          <div class="text-muted text-uppercase small mb-1">Activos</div>
+          <div class="h4 mb-0">{{ summary.vehiculos }}</div>
+          <div class="text-muted small">Vehículos asociados</div>
+        </div>
+        <span class="icon-circle bg-success text-white">
+          <i class="bi bi-car-front"></i>
+        </span>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-lg-3">
+    <div class="card stat-card shadow-sm h-100">
+      <div class="card-body d-flex align-items-center justify-content-between">
+        <div>
+          <div class="text-muted text-uppercase small mb-1">Citas</div>
+          <div class="h4 mb-0">{{ summary.citas }}</div>
+          <div class="text-muted small">Agendadas históricamente</div>
+        </div>
+        <span class="icon-circle bg-info text-white">
+          <i class="bi bi-calendar-event"></i>
+        </span>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-lg-3">
+    <div class="card stat-card shadow-sm h-100">
+      <div class="card-body d-flex align-items-center justify-content-between">
+        <div>
+          <div class="text-muted text-uppercase small mb-1">Seguimiento</div>
+          <div class="h4 mb-0">{{ summary.sin_contacto }}</div>
+          <div class="text-muted small">{{ summary.inactivos }} inactivos · {{ summary.nuevos_mes }} nuevos</div>
+        </div>
+        <span class="icon-circle bg-warning text-white">
+          <i class="bi bi-bell"></i>
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-body">
+    <form method="get" class="row gy-3 gx-3 align-items-end">
+      <div class="col-12 col-xl-4">
+        <label class="form-label text-muted text-uppercase small mb-1" for="buscar">Buscar</label>
+        <div class="input-group input-group-sm">
+          <span class="input-group-text"><i class="bi bi-search"></i></span>
+          <input id="buscar" type="search" name="q" value="{{ search_query }}" class="form-control" placeholder="Nombre, teléfono, email o documento">
+        </div>
+      </div>
+      <div class="col-12 col-sm-6 col-xl-2">
+        <label class="form-label text-muted text-uppercase small mb-1" for="tipo">Tipo</label>
+        <select id="tipo" class="form-select form-select-sm" name="tipo">
+          <option value="">Todos</option>
+          <option value="persona" {% if tipo_filter == "persona" %}selected{% endif %}>Personas</option>
+          <option value="empresa" {% if tipo_filter == "empresa" %}selected{% endif %}>Empresas</option>
+        </select>
+      </div>
+      <div class="col-12 col-sm-6 col-xl-2">
+        <label class="form-label text-muted text-uppercase small mb-1" for="origen">Origen</label>
+        <select id="origen" class="form-select form-select-sm" name="origen">
+          <option value="">Todos</option>
+          {% for value, label in origen_options %}
+            <option value="{{ value }}" {% if origen_filter == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-12 col-sm-6 col-xl-2">
+        <label class="form-label text-muted text-uppercase small mb-1" for="estado">Estado</label>
+        <select id="estado" class="form-select form-select-sm" name="estado">
+          {% for value, label in estado_options %}
+            <option value="{{ value }}" {% if estado_filter == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-12 col-sm-6 col-xl-2">
+        <label class="form-label text-muted text-uppercase small mb-1" for="orden">Ordenar</label>
+        <select id="orden" class="form-select form-select-sm" name="o">
+          <option value="">Nombre (A-Z)</option>
+          <option value="-nombre" {% if order == "-nombre" %}selected{% endif %}>Nombre (Z-A)</option>
+          <option value="-creado" {% if order == "-creado" %}selected{% endif %}>Recientes</option>
+          <option value="creado" {% if order == "creado" %}selected{% endif %}>Antiguos</option>
+          <option value="-ultimo_contacto" {% if order == "-ultimo_contacto" %}selected{% endif %}>Contacto reciente</option>
+          <option value="ultimo_contacto" {% if order == "ultimo_contacto" %}selected{% endif %}>Contacto antiguo</option>
+        </select>
+      </div>
+      <div class="col-12 col-xl-12 text-end">
+        <button type="submit" class="btn btn-sm btn-primary">
+          <i class="bi bi-arrow-right-circle me-1"></i> Aplicar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if clientes %}
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Cliente</th>
+              <th>Contacto</th>
+              <th>Origen</th>
+              <th>Último contacto</th>
+              <th class="text-center">Vehículos</th>
+              <th class="text-center">Citas</th>
+              <th class="text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in clientes %}
+              <tr>
+                <td>
+                  <div class="fw-semibold">
+                    <a class="text-decoration-none" href="{% url 'clientes:detail' c.pk %}">{{ c.nombre }}</a>
+                    {% if c.es_empresa %}
+                      <span class="badge badge-soft ms-1">Empresa</span>
+                    {% endif %}
+                  </div>
+                  <div class="text-muted small">
+                    Creado {{ c.creado|date:"Y-m-d" }}
+                    {% if c.documento %}· {{ c.documento }}{% endif %}
+                  </div>
+                </td>
+                <td>
+                  {% if c.telefono %}
+                    <a class="badge text-bg-secondary text-decoration-none me-1" href="tel:{{ c.telefono|urlencode }}">
+                      <i class="bi bi-telephone"></i> {{ c.telefono }}
+                    </a>
+                  {% endif %}
+                  {% if c.email %}
+                    <a class="badge text-bg-info text-decoration-none" href="mailto:{{ c.email|urlencode }}">
+                      <i class="bi bi-envelope"></i> {{ c.email }}
+                    </a>
+                  {% endif %}
+                  <div class="text-muted small">{{ c.direccion|default:"Sin dirección" }}</div>
+                </td>
+                <td>
+                  <span class="badge text-bg-light">{{ c.get_origen_display }}</span>
+                </td>
+                <td>
+                  {% if c.ultimo_contacto %}
+                    <span class="status-pill {% if c.ultimo_contacto < inactivo_threshold %}inactivo{% elif c.ultimo_contacto < reciente_threshold %}pendiente{% endif %}">
+                      <i class="bi bi-clock-history"></i> {{ c.ultimo_contacto|date:"Y-m-d H:i" }}
+                    </span>
+                  {% else %}
+                    <span class="status-pill pendiente">
+                      <i class="bi bi-question-circle"></i> Sin registro
+                    </span>
+                  {% endif %}
+                </td>
+                <td class="text-center">
+                  <span class="badge text-bg-success">{{ c.vehiculos_count|default:0 }}</span>
+                </td>
+                <td class="text-center">
+                  <span class="badge text-bg-primary">{{ c.citas_count|default:0 }}</span>
+                </td>
+                <td class="text-center">
+                  <div class="btn-group btn-group-sm mb-1">
+                    <a class="btn btn-outline-primary" href="{% url 'clientes:detail' c.pk %}" title="Ver detalle">
+                      <i class="bi bi-eye"></i>
+                    </a>
+                    <a class="btn btn-outline-secondary" href="{% url 'clientes:edit' c.pk %}" title="Editar">
+                      <i class="bi bi-pencil"></i>
+                    </a>
+                    <a class="btn btn-outline-danger" href="{% url 'clientes:delete' c.pk %}" title="Eliminar">
+                      <i class="bi bi-trash"></i>
+                    </a>
+                  </div>
+                  <form method="post" action="{% url 'clientes:touch' c.pk %}">
+                    {% csrf_token %}
+                    <button class="btn btn-link btn-sm text-decoration-none" type="submit">
+                      <i class="bi bi-check-circle me-1"></i> Registrar contacto
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% if is_paginated %}
+      <div class="card-footer bg-white border-0">
+        <nav aria-label="Paginación clientes">
+          <ul class="pagination pagination-sm mb-0 justify-content-end">
+            {% if page_obj.has_previous %}
+              <li class="page-item">
+                <a class="page-link" href="?{% if query_string %}{{ query_string }}&{% endif %}page={{ page_obj.previous_page_number }}">Anterior</a>
+              </li>
+            {% endif %}
+            <li class="page-item disabled">
+              <span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+            </li>
+            {% if page_obj.has_next %}
+              <li class="page-item">
+                <a class="page-link" href="?{% if query_string %}{{ query_string }}&{% endif %}page={{ page_obj.next_page_number }}">Siguiente</a>
+              </li>
+            {% endif %}
+          </ul>
+        </nav>
+      </div>
+    {% endif %}
+  </div>
+{% else %}
+  <div class="alert alert-light text-center py-5">
+    <i class="bi bi-people display-6 d-block mb-2"></i>
+    No hay clientes registrados con los filtros actuales.
+  </div>
+{% endif %}
+
+<div class="row g-4 mt-1">
+  <div class="col-lg-6">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white border-0 py-3">
+        <span class="text-muted text-uppercase small">Nuevos clientes</span>
+      </div>
+      <div class="list-group list-group-flush">
+        {% for item in recent_clients %}
+          <a class="list-group-item list-group-item-action d-flex justify-content-between align-items-start" href="{% url 'clientes:detail' item.pk %}">
+            <div>
+              <div class="fw-semibold">{{ item.nombre }}</div>
+              <div class="text-muted small">{{ item.creado|date:"Y-m-d H:i" }}{% if item.documento %} · {{ item.documento }}{% endif %}</div>
+            </div>
+            <span class="badge text-bg-light">{{ item.get_origen_display }}</span>
+          </a>
+        {% empty %}
+          <div class="list-group-item text-muted small">Aún no hay clientes registrados.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white border-0 py-3">
+        <span class="text-muted text-uppercase small">Seguimiento pendiente</span>
+      </div>
+      <div class="list-group list-group-flush">
+        {% for item in follow_up_needed %}
+          <a class="list-group-item list-group-item-action d-flex justify-content-between align-items-start" href="{% url 'clientes:detail' item.pk %}">
+            <div>
+              <div class="fw-semibold">{{ item.nombre }}</div>
+              <div class="text-muted small">
+                Último contacto:
+                {% if item.ultimo_contacto %}
+                  {{ item.ultimo_contacto|date:"Y-m-d" }}
+                {% else %}
+                  Sin registro
+                {% endif %}
+              </div>
+            </div>
+            <span class="badge text-bg-warning text-uppercase">Seguimiento</span>
+          </a>
+        {% empty %}
+          <div class="list-group-item text-muted small">No hay seguimientos pendientes.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

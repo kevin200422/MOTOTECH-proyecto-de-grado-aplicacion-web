@@ -1,0 +1,702 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Taller{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+
+  <!-- Filtros -->
+  <div class="col-12">
+    <div class="card p-3 p-md-4">
+      <div class="d-flex flex-wrap align-items-center gap-3 mb-3">
+        <div>
+          <h5 class="mb-0">Panel de inteligencia del taller</h5>
+          <small class="text-muted">Ajusta el periodo y estados para refrescar las analíticas y pronósticos.</small>
+        </div>
+        <div class="ms-auto d-flex flex-wrap gap-2">
+          <button class="btn btn-outline-secondary" type="button" data-bs-toggle="offcanvas" data-bs-target="#manualAnalytics" aria-controls="manualAnalytics">
+            <i class="bi bi-journal-text"></i> Manual BI
+          </button>
+          <button id="btn_aplicar" class="btn btn-primary"><i class="bi bi-filter"></i> Aplicar</button>
+          <a class="btn btn-outline-secondary" id="btn_csv" href="#"><i class="bi bi-filetype-csv"></i> CSV</a>
+          <a class="btn btn-outline-secondary" id="btn_xlsx" href="#"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+        </div>
+      </div>
+      <div class="row g-3 align-items-end">
+        <div class="col-12 col-sm-6 col-md-auto">
+          <label class="form-label mb-1">Desde</label>
+          <input id="f_desde" type="date" class="form-control" value="{{ desde_sugerido }}">
+        </div>
+        <div class="col-12 col-sm-6 col-md-auto">
+          <label class="form-label mb-1">Hasta</label>
+          <input id="f_hasta" type="date" class="form-control" value="{{ hasta_sugerido }}">
+        </div>
+        <div class="col-12 col-md">
+          <label class="form-label mb-1">Estado(s)</label>
+          <select id="f_estados" class="form-select" multiple>
+            {% for e in estados_posibles %}
+              <option value="{{ e }}">{{ e }}</option>
+            {% endfor %}
+          </select>
+          <small class="text-muted">Ctrl/Cmd para multi-selección</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPIs negocio -->
+  <div class="col-12">
+    <div class="row row-cols-2 row-cols-md-4 g-3">
+      <div class="col">
+        <div class="card text-center p-4">
+          <div class="kpi-label">Clientes</div>
+          <div id="kpi_clientes" class="kpi-number">&mdash;</div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card text-center p-4">
+          <div class="kpi-label">Servicios</div>
+          <div id="kpi_servicios" class="kpi-number">&mdash;</div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card text-center p-4">
+          <div class="kpi-label">Citas</div>
+          <div id="kpi_citas" class="kpi-number">&mdash;</div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card text-center p-4">
+          <div class="kpi-label">Ingresos</div>
+          <div id="kpi_ingresos" class="kpi-number">&mdash;</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPIs inventario -->
+  <div class="col-12">
+    <div class="row row-cols-2 row-cols-md-4 g-3">
+      <div class="col">
+        <div class="card text-center p-4">
+          <div class="kpi-label">Valor inventario</div>
+          <div id="kpi_inv_valor" class="kpi-number">&mdash;</div>
+          <small class="text-muted">Costo total actual</small>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card text-center p-4">
+          <div class="kpi-label">Margen potencial</div>
+          <div id="kpi_inv_margen" class="kpi-number">&mdash;</div>
+          <small class="text-muted">Ingresos estimados menos costo</small>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card text-center p-4">
+          <div class="kpi-label">Consumo mensual</div>
+          <div id="kpi_inv_consumo" class="kpi-number">&mdash;</div>
+          <small class="text-muted">Unidades estimadas (últimos 90 días)</small>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card text-center p-4">
+          <div class="kpi-label">Alertas inventario</div>
+          <div id="kpi_inv_alertas" class="kpi-number">&mdash;</div>
+          <small class="text-muted" id="info_inv_alertas">SKU con stock bajo</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pestañas -->
+  <div class="col-12">
+    <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
+      <li class="nav-item" role="presentation"><button class="nav-link active" id="tab-resumen" data-bs-toggle="pill" data-bs-target="#pane-resumen" type="button">Resumen</button></li>
+      <li class="nav-item" role="presentation"><button class="nav-link" id="tab-clientes" data-bs-toggle="pill" data-bs-target="#pane-clientes" type="button">Clientes</button></li>
+      <li class="nav-item" role="presentation"><button class="nav-link" id="tab-operacion" data-bs-toggle="pill" data-bs-target="#pane-operacion" type="button">Operación</button></li>
+      <li class="nav-item" role="presentation"><button class="nav-link" id="tab-inventario" data-bs-toggle="pill" data-bs-target="#pane-inventario" type="button">Inventario</button></li>
+      <li class="nav-item" role="presentation"><button class="nav-link" id="tab-finanzas" data-bs-toggle="pill" data-bs-target="#pane-finanzas" type="button">Finanzas</button></li>
+    </ul>
+    <div class="tab-content">
+
+      <!-- RESUMEN -->
+      <div class="tab-pane fade show active" id="pane-resumen">
+        <div class="row g-4">
+          <div class="col-12">
+            <div class="card chart-card p-3 p-md-4">
+              <h5 class="mb-3"><i class="bi bi-graph-up-arrow"></i> Tendencia mensual — Citas & Ingresos (con pronóstico)</h5>
+              <canvas id="ch_timeseries" height="110"></canvas>
+              <small class="text-muted">* Pronóstico de 3 meses (si hay sklearn, regresión; de lo contrario, naive).</small>
+            </div>
+          </div>
+          <div class="col-12 col-lg-7">
+            <div class="card chart-card p-3 p-md-4">
+              <h5 class="mb-3"><i class="bi bi-trophy"></i> Top servicios por ingresos</h5>
+              <canvas id="ch_top_servicios" height="140"></canvas>
+            </div>
+          </div>
+          <div class="col-12 col-lg-5">
+            <div class="card chart-card p-3 p-md-4">
+              <h5 class="mb-3"><i class="bi bi-pie-chart"></i> Distribución por estado</h5>
+              <canvas id="ch_estados" height="140"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CLIENTES -->
+      <div class="tab-pane fade" id="pane-clientes">
+        <div class="row g-4">
+          <div class="col-12 col-lg-6">
+            <div class="card chart-card p-3 p-md-4">
+              <h5 class="mb-1"><i class="bi bi-people"></i> LTV promedio</h5>
+              <span class="badge rounded-pill badge-soft mb-3" id="ltv_prom">—</span>
+              <canvas id="ch_top_clientes_ltv" height="140"></canvas>
+            </div>
+          </div>
+          <div class="col-12 col-lg-6">
+            <div class="card chart-card p-3 p-md-4">
+              <h5 class="mb-1"><i class="bi bi-repeat"></i> Repeat Rate</h5>
+              <span class="badge rounded-pill badge-soft mb-3" id="repeat_rate_badge">—</span>
+              <canvas id="ch_repeat_donut" height="140"></canvas>
+            </div>
+          </div>
+          <div class="col-12">
+            <div class="card chart-card p-3 p-md-4">
+              <h5 class="mb-3"><i class="bi bi-grid-3x3-gap"></i> Cohortes (retención por mes de alta)</h5>
+              <canvas id="ch_cohortes" height="120"></canvas>
+              <small class="text-muted">Valores: proporción normalizada por cohorte (M+0 a M+5).</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- OPERACIÓN -->
+      <div class="tab-pane fade" id="pane-operacion">
+        <div class="row g-4">
+          <div class="col-12">
+            <div class="card chart-card p-3 p-md-4">
+              <h5 class="mb-3"><i class="bi bi-thermometer-sun"></i> Heatmap día-hora (volumen de citas)</h5>
+              <canvas id="ch_heatmap" height="180"></canvas>
+            </div>
+          </div>
+          <div class="col-12 col-lg-6">
+            <div class="card chart-card p-3 p-md-4 h-100">
+              <h5 class="mb-3"><i class="bi bi-funnel"></i> Embudo de citas</h5>
+              <canvas id="ch_funnel" height="140"></canvas>
+            </div>
+          </div>
+          <div class="col-12 col-lg-6">
+            <div class="card p-3 p-md-4 h-100">
+              <h5 class="mb-3"><i class="bi bi-clipboard-data"></i> Notas operativas</h5>
+              <ul class="mb-0 small text-muted ps-3">
+                <li>Usa el heatmap para planificar recursos en horas pico.</li>
+                <li>Monitorea el embudo para detectar fases con estancamientos.</li>
+                <li>Combina filtros por estado para auditar equipos específicos.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- INVENTARIO -->
+      <div class="tab-pane fade" id="pane-inventario">
+        <div class="row g-4">
+          <div class="col-12">
+            <div class="card chart-card p-3 p-md-4">
+              <div class="d-flex flex-wrap justify-content-between align-items-center mb-2">
+                <h5 class="mb-0"><i class="bi bi-box-seam"></i> Inventario - Rotación & Cobertura</h5>
+                <span class="text-muted small">Referencia de consumo: últimos 90 días</span>
+              </div>
+              <canvas id="ch_inventario" height="140"></canvas>
+            </div>
+          </div>
+          <div class="col-12 col-lg-6">
+            <div class="card chart-card p-3 p-md-4 h-100">
+              <h5 class="mb-3"><i class="bi bi-diagram-3"></i> Valor y rotación por categoría</h5>
+              <canvas id="ch_inventario_cat" height="160"></canvas>
+            </div>
+          </div>
+          <div class="col-12 col-lg-6">
+            <div class="card p-3 p-md-4 h-100">
+              <h5 class="mb-3"><i class="bi bi-exclamation-triangle"></i> Pronóstico de reposición</h5>
+              <div class="table-responsive">
+                <table id="tabla_inventario" class="table table-sm align-middle">
+                  <thead><tr><th>Repuesto</th><th>Cat.</th><th>Cobertura (d)</th><th>Reposición (d)</th><th>Consumo</th><th>Estado</th></tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+              <div class="text-muted small mt-2">
+                <span id="inv_sin_mov_txt"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FINANZAS -->
+      <div class="tab-pane fade" id="pane-finanzas">
+        <div class="row g-4">
+          <div class="col-12">
+            <div class="card chart-card p-3 p-md-4">
+              <h5 class="mb-3"><i class="bi bi-cash-coin"></i> Margen por servicio</h5>
+              <canvas id="ch_margen_servicios" height="140"></canvas>
+              <small class="text-muted">Si no hay campo de costo en Servicio, el margen = ingresos.</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Tabla de citas -->
+  <div class="col-12">
+    <div class="card p-3 p-md-4">
+      <h5 class="mb-3"><i class="bi bi-list-check"></i> Citas (últimos registros)</h5>
+      <div class="table-responsive">
+        <table id="tabla_citas" class="table table-sm table-striped align-middle">
+          <thead><tr><th>Fecha</th><th>Cliente</th><th>Servicio</th><th>Estado</th><th>Ingreso</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <small class="text-muted">La tabla respeta los filtros aplicados.</small>
+    </div>
+  </div>
+
+
+<div class="offcanvas offcanvas-end" tabindex="-1" id="manualAnalytics" aria-labelledby="manualAnalyticsLabel">
+  <div class="offcanvas-header">
+    <h5 class="mb-0" id="manualAnalyticsLabel">Manual de analítica y BI</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Cerrar"></button>
+  </div>
+  <div class="offcanvas-body small">
+    <p class="text-muted">Guía rápida para interpretar los indicadores, pronósticos y herramientas de inteligencia del taller.</p>
+    <div class="accordion" id="manualAccordion">
+      <div class="accordion-item">
+        <h2 class="accordion-header" id="headingFiltros">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#manualFiltros" aria-expanded="false" aria-controls="manualFiltros">Filtros y exportaciones</button>
+        </h2>
+        <div id="manualFiltros" class="accordion-collapse collapse" data-bs-parent="#manualAccordion">
+          <div class="accordion-body">
+            <ul class="mb-0 ps-3">
+              <li>El rango de fechas sincroniza KPIs, gráficos y predicciones (timeseries e inventario).</li>
+              <li>Combina varios estados para auditar etapas específicas del flujo de servicio.</li>
+              <li>Exporta CSV o Excel para compartir con dirección o alimentar otros tableros.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="accordion-item">
+        <h2 class="accordion-header" id="headingKPIs">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#manualKPIs" aria-expanded="false" aria-controls="manualKPIs">KPIs principales</button>
+        </h2>
+        <div id="manualKPIs" class="accordion-collapse collapse" data-bs-parent="#manualAccordion">
+          <div class="accordion-body">
+            <ul class="mb-0 ps-3">
+              <li>Clientes, Servicios, Citas e Ingresos muestran el pulso comercial inmediato.</li>
+              <li>Los nuevos KPIs de inventario reflejan valor en stock, margen potencial y consumo proyectado.</li>
+              <li>Las alertas de inventario priorizan SKU en riesgo para reponer antes de quiebres.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="accordion-item">
+        <h2 class="accordion-header" id="headingResumen">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#manualResumen" aria-expanded="false" aria-controls="manualResumen">Pestaña Resumen</button>
+        </h2>
+        <div id="manualResumen" class="accordion-collapse collapse" data-bs-parent="#manualAccordion">
+          <div class="accordion-body">
+            <ul class="mb-0 ps-3">
+              <li>La tendencia mensual incluye pronóstico de ingresos a 3 meses (regresión o naive).</li>
+              <li>El top de servicios ayuda a decidir promociones o paquetes más rentables.</li>
+              <li>La distribución por estado permite detectar desbalances operativos rápidamente.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="accordion-item">
+        <h2 class="accordion-header" id="headingClientes">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#manualClientes" aria-expanded="false" aria-controls="manualClientes">Clientes y fidelización</button>
+        </h2>
+        <div id="manualClientes" class="accordion-collapse collapse" data-bs-parent="#manualAccordion">
+          <div class="accordion-body">
+            <ul class="mb-0 ps-3">
+              <li>El LTV promedio resume ingresos por cliente activo dentro del periodo.</li>
+              <li>El repeat rate y la donut distinguen repetidores versus primeras visitas.</li>
+              <li>El mapa de cohortes revela retención mes a mes para campañas de lealtad.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="accordion-item">
+        <h2 class="accordion-header" id="headingOperacion">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#manualOperacion" aria-expanded="false" aria-controls="manualOperacion">Operación diaria</button>
+        </h2>
+        <div id="manualOperacion" class="accordion-collapse collapse" data-bs-parent="#manualAccordion">
+          <div class="accordion-body">
+            <ul class="mb-0 ps-3">
+              <li>El heatmap expone horas pico para ajustar turnos, personal y bahías.</li>
+              <li>El embudo evidencia cuántas citas avanzan o se detienen por estado.</li>
+              <li>Integra estas métricas con las notas operativas para definir prioridades diarias.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="accordion-item">
+        <h2 class="accordion-header" id="headingInventario">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#manualInventario" aria-expanded="false" aria-controls="manualInventario">Inventario y predicciones</button>
+        </h2>
+        <div id="manualInventario" class="accordion-collapse collapse" data-bs-parent="#manualAccordion">
+          <div class="accordion-body">
+            <ul class="mb-0 ps-3">
+              <li>Rotación y cobertura se calculan con salidas reales de los últimos 90 días.</li>
+              <li>El gráfico por categoría combina valor en stock y rotación para optimizar compras.</li>
+              <li>La tabla de pronóstico estima días de cobertura vs. reposición para anticipar pedidos.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="accordion-item">
+        <h2 class="accordion-header" id="headingFinanzas">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#manualFinanzas" aria-expanded="false" aria-controls="manualFinanzas">Finanzas</button>
+        </h2>
+        <div id="manualFinanzas" class="accordion-collapse collapse" data-bs-parent="#manualAccordion">
+          <div class="accordion-body">
+            <ul class="mb-0 ps-3">
+              <li>El margen por servicio contrasta ingresos vs costos para priorizar servicios rentables.</li>
+              <li>Si no existe costo registrado se asume margen bruto igual al ingreso, úsalos como alerta para completar datos.</li>
+              <li>Combina con exportes para preparar reportes financieros o planes de precios.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+// ------- helpers -------
+const qs = () => {
+  const p = new URLSearchParams();
+  const d = document.getElementById('f_desde').value;
+  const h = document.getElementById('f_hasta').value;
+  const est = Array.from(document.getElementById('f_estados').selectedOptions).map(o => o.value);
+  if (d) p.append('desde', d);
+  if (h) p.append('hasta', h);
+  est.forEach(e => p.append('estado', e));
+  return p.toString();
+};
+const money = v => new Intl.NumberFormat('es-ES', {style:'currency', currency:'USD'}).format(v||0);
+const pct = v => `${(100*(v||0)).toFixed(1)}%`;
+const numberFmt = new Intl.NumberFormat('es-ES', { maximumFractionDigits: 1 });
+const intFmt = new Intl.NumberFormat('es-ES', { maximumFractionDigits: 0 });
+const fmtUnits = v => numberFmt.format(v || 0);
+
+// ------- CHART refs -------
+let CH_TIME=null, CH_TOP=null, CH_PIE=null, CH_HEAT=null, CH_COHORT=null, CH_LTV=null, CH_REPEAT=null, CH_INV=null, CH_INV_CAT=null, CH_FUNNEL=null, CH_MARGEN=null;
+
+// ------- KPIs -------
+async function loadKPIs(){
+  const {data} = await axios.get(`/dashboard/api/kpis/?${qs()}`);
+  document.getElementById('kpi_clientes').textContent = data.clientes.toLocaleString('es-ES');
+  document.getElementById('kpi_servicios').textContent = data.servicios.toLocaleString('es-ES');
+  document.getElementById('kpi_citas').textContent = data.citas.toLocaleString('es-ES');
+  document.getElementById('kpi_ingresos').textContent = money(data.ingresos);
+}
+
+// ------- Serie temporal -------
+async function loadTimeSeries(){
+  const {data} = await axios.get(`/dashboard/api/timeseries/?${qs()}`);
+  const ctx = document.getElementById('ch_timeseries');
+  if (CH_TIME) CH_TIME.destroy();
+  CH_TIME = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: data.labels.concat(data.forecast_labels),
+      datasets: [
+        { label:'Citas', data: data.citas.concat(Array(data.forecast_labels.length).fill(null)), borderWidth:2, tension:.2 },
+        { label:'Ingresos', yAxisID:'y1', data: data.ingresos.concat(Array(data.forecast_labels.length).fill(null)), borderWidth:2, borderDash:[4,3], tension:.2 },
+        { label:'Pronóstico ingresos (3m)', yAxisID:'y1', data: Array(data.labels.length).fill(null).concat(data.forecast_ingresos), borderWidth:3, borderDash:[2,2], tension:.3 }
+      ]
+    },
+    options: {
+      plugins:{ legend:{ position:'top' }},
+      scales:{ y:{ beginAtZero:true, title:{display:true,text:'Citas'} }, y1:{ position:'right', beginAtZero:true, title:{display:true,text:'Ingresos'} } }
+    }
+  });
+}
+
+// ------- Top servicios -------
+async function loadTopServicios(){
+  const {data} = await axios.get(`/dashboard/api/top-servicios/?${qs()}`);
+  const ctx = document.getElementById('ch_top_servicios');
+  if (CH_TOP) CH_TOP.destroy();
+  CH_TOP = new Chart(ctx, { type:'bar', data:{ labels:data.labels, datasets:[{label:'Ingresos', data:data.ingresos}] }, options:{ indexAxis:'y', scales:{x:{beginAtZero:true}} }});
+}
+
+// ------- Estados -------
+async function loadPieEstados(){
+  const {data} = await axios.get(`/dashboard/api/estado-pastel/?${qs()}`);
+  const ctx = document.getElementById('ch_estados');
+  if (CH_PIE) CH_PIE.destroy();
+  CH_PIE = new Chart(ctx, { type:'pie', data:{ labels:data.labels, datasets:[{ data:data.values }] }});
+}
+
+// ------- Heatmap día-hora -------
+async function loadHeatmap(){
+  const {data} = await axios.get(`/dashboard/api/heatmap-dia-hora/?${qs()}`);
+  const ctx = document.getElementById('ch_heatmap');
+  if (CH_HEAT) CH_HEAT.destroy();
+  // representamos heatmap como "bubble" (x: hora, y: día, r proporcional)
+  const ds = [];
+  const maxv = Math.max(1, ...data.matrix.flat());
+  for (let d=0; d<7; d++){
+    for (let h=0; h<24; h++){
+      const v = data.matrix[d][h];
+      ds.push({x:h, y:d, r: (v>0? (8 + 12*v/maxv):2) });
+    }
+  }
+  CH_HEAT = new Chart(ctx, {
+    type:'bubble',
+    data:{ datasets:[{ label:'Volumen', data: ds }] },
+    options:{
+      scales:{ x:{ title:{display:true,text:'Hora'} , min:-0.5, max:23.5 }, y:{ title:{display:true,text:'Día (0=Dom)'}, min:-0.5, max:6.5 } },
+      plugins:{ legend:{display:false } }
+    }
+  });
+}
+
+// ------- Cohortes -------
+async function loadCohortes(){
+  const {data} = await axios.get(`/dashboard/api/cohortes/?${qs()}`);
+  const ctx = document.getElementById('ch_cohortes');
+  if (CH_COHORT) CH_COHORT.destroy();
+  // apilamos como barras por offset
+  const datasets = [];
+  for (let c=0; c<data.labels_cols.length; c++){
+    datasets.push({
+      label: data.labels_cols[c],
+      data: data.retention.map(row => row[c]),
+      stack: 'ret',
+      borderWidth:1
+    });
+  }
+  CH_COHORT = new Chart(ctx, {
+    type:'bar',
+    data:{ labels: data.labels_rows, datasets },
+    options:{
+      plugins:{ tooltip:{ callbacks:{ label:(ctx)=> pct(ctx.parsed.y) } }, legend:{position:'bottom'} },
+      scales:{ y:{ beginAtZero:true, ticks:{ callback:(v)=> pct(v) } } }
+    }
+  });
+}
+
+// ------- LTV -------
+async function loadLTV(){
+  const {data} = await axios.get(`/dashboard/api/ltv-clientes/?${qs()}`);
+  document.getElementById('ltv_prom').textContent = `LTV promedio: ${money(data.ltv_promedio)}`;
+  const ctx = document.getElementById('ch_top_clientes_ltv');
+  if (CH_LTV) CH_LTV.destroy();
+  CH_LTV = new Chart(ctx, { type:'bar', data:{ labels:data.labels, datasets:[{ label:'Ingresos', data:data.valores }] }, options:{ scales:{ y:{ beginAtZero:true }}, plugins:{ legend:{display:false}} }});
+}
+
+// ------- Repeat rate -------
+async function loadRepeat(){
+  const {data} = await axios.get(`/dashboard/api/repeat-rate/?${qs()}`);
+  document.getElementById('repeat_rate_badge').textContent = `Clientes con 2+ citas: ${pct(data.repeat_rate)}`;
+  const ctx = document.getElementById('ch_repeat_donut');
+  if (CH_REPEAT) CH_REPEAT.destroy();
+  const repr = data.repetidores, non = Math.max(data.total - data.repetidores, 0);
+  CH_REPEAT = new Chart(ctx, { type:'doughnut', data:{ labels:['Repetidores','No repetidores'], datasets:[{ data:[repr, non] }] }, options:{ plugins:{ legend:{position:'bottom'} } }});
+}
+
+// ------- Inventario -------
+async function loadInventario(){
+  const {data} = await axios.get(`/dashboard/api/inventario-metricas/?${qs()}`);
+  const invValor = document.getElementById('kpi_inv_valor');
+  if (invValor) invValor.textContent = money(data.valor_stock);
+  const invMargen = document.getElementById('kpi_inv_margen');
+  if (invMargen) invMargen.textContent = money(data.margen_potencial);
+  const invConsumo = document.getElementById('kpi_inv_consumo');
+  if (invConsumo) invConsumo.textContent = `${fmtUnits(data.consumo_mensual_estimado)} uds`;
+  const invAlertas = document.getElementById('kpi_inv_alertas');
+  if (invAlertas) invAlertas.textContent = intFmt.format(data.riesgo_sin_stock || 0);
+  const infoAlertas = document.getElementById('info_inv_alertas');
+  if (infoAlertas) infoAlertas.textContent = `SKU con stock bajo: ${intFmt.format(data.sku_bajos || 0)}`;
+  const infoSinMov = document.getElementById('inv_sin_mov_txt');
+  if (infoSinMov) {
+    infoSinMov.textContent = data.sin_movimientos
+      ? `${intFmt.format(data.sin_movimientos)} SKU sin movimientos en la ventana analizada.`
+      : 'Todos los SKU registraron movimientos recientes.';
+  }
+
+  const ctx = document.getElementById('ch_inventario');
+  if (ctx) {
+    if (CH_INV) CH_INV.destroy();
+    CH_INV = new Chart(ctx, {
+      type:'bar',
+      data:{
+        labels:['Rotación (mensualizada)','Cobertura (días)','Alertas críticas'],
+        datasets:[{
+          label:'Indicador',
+          data:[data.rotacion, data.cobertura_dias, data.riesgo_sin_stock],
+          backgroundColor:['#0d6efd33','#19875433','#dc354533'],
+          borderColor:['#0d6efd','#198754','#dc3545'],
+          borderWidth:1
+        }]
+      },
+      options:{
+        plugins:{ legend:{display:false} },
+        scales:{ y:{ beginAtZero:true } }
+      }
+    });
+  }
+
+  const ctxCat = document.getElementById('ch_inventario_cat');
+  if (ctxCat) {
+    if (CH_INV_CAT) CH_INV_CAT.destroy();
+    const labels = (data.categorias || []).map(c => c.nombre);
+    const valores = (data.categorias || []).map(c => c.valor);
+    const rotaciones = (data.categorias || []).map(c => c.rotacion);
+    CH_INV_CAT = new Chart(ctxCat, {
+      data:{
+        labels,
+        datasets:[
+          {
+            type:'bar',
+            label:'Valor (USD)',
+            data: valores,
+            backgroundColor:'#0d6efd55',
+            borderColor:'#0d6efd',
+            borderWidth:1
+          },
+          {
+            type:'line',
+            label:'Rotación mensual',
+            data: rotaciones,
+            borderColor:'#fd7e14',
+            backgroundColor:'#fd7e1444',
+            tension:.3,
+            yAxisID:'y1',
+            borderWidth:2
+          }
+        ]
+      },
+      options:{
+        responsive:true,
+        plugins:{ legend:{ position:'bottom' } },
+        scales:{
+          y:{ beginAtZero:true, title:{display:true, text:'Valor'} },
+          y1:{ beginAtZero:true, position:'right', title:{display:true, text:'Rotación'}, grid:{ drawOnChartArea:false } }
+        }
+      }
+    });
+  }
+
+  const tbody = document.querySelector('#tabla_inventario tbody');
+  if (tbody) {
+    tbody.innerHTML = '';
+    const criticos = data.criticos || [];
+    if (!criticos.length) {
+      const tr = document.createElement('tr');
+      const td = document.createElement('td');
+      td.colSpan = 6;
+      td.className = 'text-center text-muted';
+      td.textContent = 'Sin alertas en el periodo analizado.';
+      tr.appendChild(td);
+      tbody.appendChild(tr);
+    } else {
+      criticos.forEach(item => {
+        const tr = document.createElement('tr');
+        const coverage = item.cobertura_dias != null ? fmtUnits(item.cobertura_dias) : '—';
+        const repos = item.tiempo_reposicion ? intFmt.format(item.tiempo_reposicion) : '—';
+        const consumo = `${fmtUnits(item.consumo_diario)} uds/día`;
+        const estado = document.createElement('span');
+        estado.className = item.riesgo ? 'badge bg-danger' : 'badge bg-success';
+        estado.textContent = item.riesgo ? 'Urgente' : 'Estable';
+
+        [
+          item.nombre,
+          item.categoria,
+          coverage,
+          repos,
+          consumo
+        ].forEach(val => {
+          const td = document.createElement('td');
+          td.textContent = val;
+          tr.appendChild(td);
+        });
+        const tdEstado = document.createElement('td');
+        tdEstado.appendChild(estado);
+        tr.appendChild(tdEstado);
+        tbody.appendChild(tr);
+      });
+    }
+  }
+}
+
+// ------- Funnel -------
+async function loadFunnel(){
+  const {data} = await axios.get(`/dashboard/api/funnel-citas/?${qs()}`);
+  const ctx = document.getElementById('ch_funnel');
+  if (CH_FUNNEL) CH_FUNNEL.destroy();
+  CH_FUNNEL = new Chart(ctx, { type:'bar', data:{ labels:['Pendiente','En proceso','Completada','Cancelada'], datasets:[{ label:'Citas', data:[data.pendiente, data.en_proceso, data.completada, data.cancelada]}]}, options:{ plugins:{legend:{display:false}}, scales:{ y:{ beginAtZero:true }}}});
+}
+
+// ------- Margen por servicio -------
+async function loadMargen(){
+  const {data} = await axios.get(`/dashboard/api/margen-servicios/?${qs()}`);
+  const ctx = document.getElementById('ch_margen_servicios');
+  if (CH_MARGEN) CH_MARGEN.destroy();
+  CH_MARGEN = new Chart(ctx, {
+    type:'bar',
+    data:{ labels:data.labels, datasets:[
+      { label:'Ingresos', data:data.ingresos },
+      { label:'Costos', data:data.costos },
+      { label:'Margen', data:data.margen }
+    ]},
+    options:{ scales:{ y:{ beginAtZero:true } } }
+  });
+}
+
+// ------- Tabla -------
+async function loadTable(){
+  const {data} = await axios.get(`/dashboard/export/citas.csv?${qs()}`, { responseType:'text' });
+  const lines = data.split(/\r?\n/).filter(Boolean);
+  const body = document.querySelector('#tabla_citas tbody');
+  body.innerHTML = '';
+  for (let i=1;i<Math.min(lines.length, 101);i++){
+    const cols = lines[i].split(',');
+    const tr = document.createElement('tr');
+    cols.forEach((c, idx) => {
+      const td = document.createElement('td');
+      td.textContent = (idx===4? money(parseFloat(c)): c.replace(/^"|"$/g,''));
+      tr.appendChild(td);
+    });
+    body.appendChild(tr);
+  }
+}
+
+// ------- Refresh -------
+async function refreshAll(){
+  await Promise.all([
+    loadKPIs(), loadTimeSeries(), loadTopServicios(), loadPieEstados(),
+    loadHeatmap(), loadCohortes(), loadLTV(), loadRepeat(),
+    loadInventario(), loadFunnel(), loadMargen(),
+    loadTable()
+  ]);
+}
+
+document.getElementById('btn_aplicar').addEventListener('click', () => refreshAll());
+document.getElementById('btn_csv').addEventListener('click', (e)=>{ e.target.href = `/dashboard/export/citas.csv?${qs()}`; });
+document.getElementById('btn_xlsx').addEventListener('click', (e)=>{ e.preventDefault(); window.location.href = `/dashboard/export/citas.xlsx?${qs()}`; });
+
+// primera carga
+refreshAll();
+</script>
+{% endblock %}

@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_head %}
+<style>
+.hero-card {
+  border: 0;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(13, 110, 253, 0.92), rgba(255, 193, 7, 0.85));
+  color: #fff;
+}
+.metric-pill {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  padding: 0.5rem 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.timeline-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #0d6efd;
+  margin-right: 0.75rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-4">
+  <div>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-2">
+        <li class="breadcrumb-item"><a href="{% url 'servicios:list' %}">Servicios</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ servicio.nombre }}</li>
+      </ol>
+    </nav>
+    <h1 class="h3 mb-0">{{ servicio.nombre }}</h1>
+  </div>
+  <div class="btn-group">
+    <a class="btn btn-outline-secondary btn-sm" href="{% url 'servicios:list' %}">
+      <i class="bi bi-arrow-left-short me-1"></i> Volver
+    </a>
+    {% if user.is_superuser or user.is_staff %}
+      <a class="btn btn-outline-primary btn-sm" href="{% url 'servicios:update' servicio.pk %}">
+        <i class="bi bi-pencil-square me-1"></i> Editar
+      </a>
+      <a class="btn btn-outline-danger btn-sm" href="{% url 'servicios:delete' servicio.pk %}">
+        <i class="bi bi-trash3 me-1"></i> Eliminar
+      </a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="hero-card shadow-sm p-4 mb-4">
+  <div class="row gy-3 align-items-center">
+    <div class="col-md-7">
+      <div class="d-flex flex-wrap gap-3 align-items-center">
+        <span class="display-6 fw-semibold mb-0">${{ servicio.precio|floatformat:2 }}</span>
+        <span class="metric-pill">
+          <i class="bi bi-clock-history"></i>
+          {{ servicio.duracion_minutos }} min
+        </span>
+        <span class="metric-pill">
+          <i class="bi bi-piggy-bank"></i>
+          Margen {{ servicio.margen_porcentaje }}%
+        </span>
+      </div>
+      <div class="mt-3">
+        <span class="badge rounded-pill {{ 'bg-success' if servicio.activo else 'bg-secondary' }}">
+          {{ servicio.activo|yesno:"Activo,Inactivo" }}
+        </span>
+      </div>
+    </div>
+    <div class="col-md-5 text-md-end">
+      <div class="d-flex flex-column flex-md-row justify-content-end gap-2">
+        <a class="btn btn-light btn-sm" href="{% url 'citas:create' %}?servicio={{ servicio.pk }}">
+          <i class="bi bi-calendar-plus me-1"></i> Agendar servicio
+        </a>
+        <a class="btn btn-outline-light btn-sm" href="{% url 'citas:list' %}?servicio={{ servicio.pk }}">
+          <i class="bi bi-calendar2-week me-1"></i> Ver agenda
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-7">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-body">
+        <h2 class="h6 text-uppercase text-muted mb-3">Resumen financiero</h2>
+        <div class="row g-3">
+          <div class="col-md-4">
+            <div class="p-3 bg-light rounded">
+              <div class="text-muted small text-uppercase">Precio venta</div>
+              <div class="fw-semibold fs-5">${{ servicio.precio|floatformat:2 }}</div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="p-3 bg-light rounded">
+              <div class="text-muted small text-uppercase">Costo interno</div>
+              <div class="fw-semibold fs-5">${{ servicio.costo|floatformat:2 }}</div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="p-3 bg-light rounded">
+              <div class="text-muted small text-uppercase">Margen</div>
+              <div class="fw-semibold fs-5">${{ servicio.margen_bruto|floatformat:2 }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <h2 class="h6 text-uppercase text-muted mb-2">Descripcion</h2>
+          <p class="mb-0">{{ servicio.descripcion|default:"Sin descripcion registrada." }}</p>
+        </div>
+
+        <div class="mt-4 text-muted small">
+          <i class="bi bi-clock-history me-1"></i>
+          Creado el {{ servicio.creado|date:"Y-m-d H:i" }} &middot; Ultima actualizacion {{ servicio.actualizado|timesince }} ago
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-body">
+        <h2 class="h6 text-uppercase text-muted mb-3">Clientes frecuentes</h2>
+        {% if clientes_frecuentes %}
+          <div class="list-group list-group-flush">
+            {% for item in clientes_frecuentes %}
+              <a class="list-group-item list-group-item-action d-flex justify-content-between align-items-start" href="{% url 'clientes:detail' item.cliente__id %}">
+                <div>
+                  <div class="fw-semibold">{{ item.cliente__nombre }}</div>
+                  <div class="text-muted small">{{ item.total }} citas</div>
+                </div>
+                <i class="bi bi-arrow-up-right text-muted"></i>
+              </a>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-muted small mb-0">Aun no hay historial para este servicio.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mt-1">
+  <div class="col-lg-7">
+    <div class="card shadow-sm border-0">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h2 class="h6 text-uppercase text-muted mb-0">Citas recientes</h2>
+          <a class="btn btn-link btn-sm text-decoration-none" href="{% url 'citas:list' %}?servicio={{ servicio.pk }}">
+            Ver todas
+          </a>
+        </div>
+
+        {% if citas_recientes %}
+          <div class="list-group list-group-flush">
+            {% for cita in citas_recientes %}
+              <div class="list-group-item px-0">
+                <div class="d-flex justify-content-between align-items-start">
+                  <div>
+                    <div class="fw-semibold">{{ cita.titulo }}</div>
+                    <div class="text-muted small">
+                      {{ cita.fecha_inicio|date:"Y-m-d H:i" }} &middot;
+                      Cliente: {{ cita.cliente.nombre }}
+                      {% if cita.vehiculo %}
+                        &middot; Vehiculo {{ cita.vehiculo.placa }}
+                      {% endif %}
+                    </div>
+                  </div>
+                  <span class="badge text-bg-light text-uppercase small">{{ cita.get_estado_display }}</span>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="alert alert-light mb-0" role="alert">
+            No hay citas registradas para este servicio. Agenda la primera para comenzar su historial.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="card shadow-sm border-0">
+      <div class="card-body">
+        <h2 class="h6 text-uppercase text-muted mb-3">Notas rapidas</h2>
+        <ul class="list-unstyled mb-0">
+          <li class="mb-3 d-flex align-items-start">
+            <span class="timeline-dot mt-1"></span>
+            <span>Verifica periodicamente que los costes esten actualizados para mantener el margen esperado.</span>
+          </li>
+          <li class="mb-3 d-flex align-items-start">
+            <span class="timeline-dot mt-1"></span>
+            <span>Relaciona cada cita con este servicio para medir su demanda.</span>
+          </li>
+          <li class="d-flex align-items-start">
+            <span class="timeline-dot mt-1"></span>
+            <span>Comunica al equipo cualquier cambio en duracion o alcance del servicio.</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

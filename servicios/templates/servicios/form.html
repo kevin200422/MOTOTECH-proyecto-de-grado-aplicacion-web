@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8 col-xl-7">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div>
+        <h1 class="h3 mb-1">{{ title }}</h1>
+        <p class="text-muted mb-0">Define los datos clave, costes y disponibilidad del servicio.</p>
+      </div>
+      <a class="btn btn-outline-secondary" href="{% url 'servicios:list' %}">
+        <i class="bi bi-arrow-left me-1"></i> Volver al listado
+      </a>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <form method="post" novalidate>
+          {% csrf_token %}
+
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+              {% for error in form.non_field_errors %}
+                <div>{{ error }}</div>
+              {% endfor %}
+            </div>
+          {% endif %}
+
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label text-muted text-uppercase small" for="{{ form.nombre.id_for_label }}">Nombre</label>
+              {{ form.nombre }}
+              {% if form.nombre.errors %}
+                <div class="invalid-feedback d-block">
+                  {% for error in form.nombre.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+
+            <div class="col-12">
+              <label class="form-label text-muted text-uppercase small" for="{{ form.descripcion.id_for_label }}">Descripcion</label>
+              {{ form.descripcion }}
+              {% if form.descripcion.errors %}
+                <div class="invalid-feedback d-block">
+                  {% for error in form.descripcion.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label text-muted text-uppercase small" for="{{ form.duracion_minutos.id_for_label }}">Duracion (min)</label>
+              {{ form.duracion_minutos }}
+              {% if form.duracion_minutos.errors %}
+                <div class="invalid-feedback d-block">
+                  {% for error in form.duracion_minutos.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label text-muted text-uppercase small" for="{{ form.costo.id_for_label }}">Costo interno</label>
+              {{ form.costo }}
+              {% if form.costo.errors %}
+                <div class="invalid-feedback d-block">
+                  {% for error in form.costo.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label text-muted text-uppercase small" for="{{ form.precio.id_for_label }}">Precio venta</label>
+              {{ form.precio }}
+              {% if form.precio.errors %}
+                <div class="invalid-feedback d-block">
+                  {% for error in form.precio.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+
+            <div class="col-12">
+              <div class="form-check form-switch mt-2">
+                {{ form.activo }}
+                <label class="form-check-label" for="{{ form.activo.id_for_label }}">Servicio activo</label>
+              </div>
+              {% if form.activo.errors %}
+                <div class="invalid-feedback d-block">
+                  {% for error in form.activo.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center mt-4">
+            <div class="text-muted small">
+              Asegurate de que el costo sea menor al precio para mantener un margen positivo.
+            </div>
+            <div class="d-flex gap-2">
+              <a class="btn btn-outline-secondary" href="{% url 'servicios:list' %}">Cancelar</a>
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check2-circle me-1"></i> Guardar
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4 col-xl-4">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <h2 class="h6 text-uppercase text-muted mb-3">Recomendaciones</h2>
+        <ul class="list-unstyled mb-0">
+          <li class="mb-3 d-flex">
+            <span class="me-3 text-primary"><i class="bi bi-clipboard-data"></i></span>
+            <span>Describe claramente que incluye el servicio para evitar dudas del cliente.</span>
+          </li>
+          <li class="mb-3 d-flex">
+            <span class="me-3 text-primary"><i class="bi bi-calculator"></i></span>
+            <span>Calcula el costo interno considerando mano de obra, repuestos y materiales.</span>
+          </li>
+          <li class="d-flex">
+            <span class="me-3 text-primary"><i class="bi bi-graph-up-arrow"></i></span>
+            <span>Revisa periodicamente precios y margenes para mantener tu rentabilidad.</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

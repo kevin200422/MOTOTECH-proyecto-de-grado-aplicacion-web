@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Eliminar {{ repuesto.nombre }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-7 col-xl-6">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <h1 class="h4 mb-3">¿Eliminar {{ repuesto.nombre }} del inventario?</h1>
+        <p class="text-muted">
+          Esta acción eliminará el registro del inventario. Los movimientos históricos se conservarán, pero no podrás
+          asociar nuevas operaciones a este repuesto.
+        </p>
+
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <div class="p-3 bg-light rounded">
+              <div class="text-muted small text-uppercase">Stock actual</div>
+              <div class="fw-semibold">{{ repuesto.stock }} {{ repuesto.unidad_medida }}</div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="p-3 bg-light rounded">
+              <div class="text-muted small text-uppercase">Valor inventario</div>
+              <div class="fw-semibold">${{ repuesto.valor_inventario|floatformat:2 }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="alert alert-warning" role="alert">
+          Esta acción no se puede deshacer.
+        </div>
+
+        <form method="post" class="d-flex gap-2">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger">Eliminar repuesto</button>
+          <a class="btn btn-outline-secondary" href="{% url 'inventario:detail' repuesto.pk %}">Cancelar</a>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}Ajustar puntos · {{ cliente.nombre }}{% endblock %}
+
+{% block content %}
+<h1 class="h4 mb-3">Ajustar puntos a {{ cliente.nombre }}</h1>
+<p class="text-muted">Saldo actual: <strong>{{ saldo_actual }}</strong> pts</p>
+<form method="post" class="card border-0 shadow-sm p-4">
+  {% csrf_token %}
+  <div class="mb-3">
+    <label class="form-label">Puntos (+/-)</label>
+    {{ form.puntos }}
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Motivo</label>
+    {{ form.motivo }}
+  </div>
+  {% if form.non_field_errors %}
+    <div class="alert alert-danger">{% for err in form.non_field_errors %}{{ err }}{% endfor %}</div>
+  {% endif %}
+  <div class="d-flex justify-content-end gap-2">
+    <a class="btn btn-outline-secondary" href="{% url 'fidelizacion:historial_cliente' cliente.pk %}">Cancelar</a>
+    <button class="btn btn-primary" type="submit">Aplicar ajuste</button>
+  </div>
+</form>
+{% endblock %}

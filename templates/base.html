@@ -1,0 +1,362 @@
+{% load static %}
+<!doctype html>
+<html lang="es" data-bs-theme="light">
+<head>
+  <meta charset="utf-8">
+  <title>{% block title %}Taller Mec&aacute;nico{% endblock %}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Bootstrap + Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <!-- DataTables -->
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css">
+  <!-- Estilos propios -->
+  <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=20241017">
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="app-body bg-body-tertiary">
+
+<div class="app-shell d-flex min-vh-100">
+  <aside class="app-sidebar" data-app-sidebar>
+    <div class="sidebar-inner d-flex flex-column h-100">
+      <div class="sidebar-hero">
+        <div class="hero-row">
+          <div class="hero-brand d-flex align-items-center gap-3">
+            <div class="hero-logo d-inline-flex align-items-center justify-content-center rounded-circle">
+              <img src="{% static 'img/logo.svg' %}" alt="Logo MotoTech" class="hero-logo-img" width="48" height="48" loading="lazy">
+            </div>
+            <div class="hero-copy">
+              <span class="hero-pill">Ecosistema MotoTech</span>
+              <span class="hero-title fw-bold">MotoTech</span>
+              <small class="hero-slogan">Tecnolog&iacute;a inteligente para talleres modernos</small>
+            </div>
+          </div>
+          <button type="button" class="hero-toggle btn btn-outline-light rounded-circle d-none d-lg-inline-flex" data-sidebar-toggle="desktop" aria-label="Contraer men&uacute;">
+            <i class="bi bi-chevron-left"></i>
+          </button>
+        </div>
+        <p class="hero-description">Orquesta clientes, servicios y stock desde un mismo panel mientras la automatizaci&oacute;n de MotoTech mantiene los flujos en movimiento.</p>
+        <a class="hero-cta" href="{% url 'dashboard:overview' %}"><i class="bi bi-speedometer2" aria-hidden="true"></i><span>Ir al panel MotoTech</span></a>
+      </div>
+
+      <div class="sidebar-scroll flex-grow-1 mt-4">
+        {% with current_ns=request.resolver_match.namespace %}
+        <div class="sidebar-section">
+          <p class="sidebar-section__title link-text">Principal</p>
+          <nav class="sidebar-nav">
+            <a class="sidebar-link{% if current_ns == 'dashboard' %} active{% endif %}" href="{% url 'dashboard:overview' %}" data-bs-toggle="tooltip" data-bs-placement="right" title="Inicio">
+              <i class="bi bi-house-door-fill"></i><span class="link-text">Inicio</span>
+            </a>
+            <a class="sidebar-link{% if current_ns == 'clientes' %} active{% endif %}" href="{% url 'clientes:list' %}" data-bs-toggle="tooltip" data-bs-placement="right" title="Clientes">
+              <i class="bi bi-people-fill"></i><span class="link-text">Clientes</span>
+            </a>
+            <a class="sidebar-link{% if current_ns == 'citas' %} active{% endif %}" href="{% url 'citas:list' %}" data-bs-toggle="tooltip" data-bs-placement="right" title="Citas">
+              <i class="bi bi-calendar2-week-fill"></i><span class="link-text">Citas</span>
+            </a>
+            <a class="sidebar-link{% if current_ns == 'vehiculos' %} active{% endif %}" href="{% url 'vehiculos:list' %}" data-bs-toggle="tooltip" data-bs-placement="right" title="Veh&iacute;culos">
+              <i class="bi bi-car-front-fill"></i><span class="link-text">Veh&iacute;culos</span>
+            </a>
+          </nav>
+        </div>
+
+        <div class="sidebar-section mt-3">
+          <p class="sidebar-section__title link-text">Operaci&oacute;n & BI</p>
+          <nav class="sidebar-nav">
+            <a class="sidebar-link{% if current_ns == 'servicios' %} active{% endif %}" href="{% url 'servicios:list' %}" data-bs-toggle="tooltip" data-bs-placement="right" title="Servicios">
+              <i class="bi bi-tools"></i><span class="link-text">Servicios</span>
+            </a>
+            <a class="sidebar-link{% if current_ns == 'inventario' %} active{% endif %}" href="{% url 'inventario:list' %}" data-bs-toggle="tooltip" data-bs-placement="right" title="Inventario">
+              <i class="bi bi-box-seam-fill"></i><span class="link-text">Inventario</span>
+            </a>
+            <a class="sidebar-link{% if current_ns == 'transacciones' %} active{% endif %}" href="{% url 'transacciones:list' %}" data-bs-toggle="tooltip" data-bs-placement="right" title="Transacciones">
+              <i class="bi bi-receipt-cutoff"></i><span class="link-text">Transacciones</span>
+            </a>
+            <a class="sidebar-link{% if current_ns == 'fidelizacion' %} active{% endif %}" href="{% url 'fidelizacion:configuracion' %}" data-bs-toggle="tooltip" data-bs-placement="right" title="Fidelizaci&oacute;n">
+              <i class="bi bi-stars"></i><span class="link-text">Fidelizaci&oacute;n</span>
+            </a>
+            <a class="sidebar-link" href="{% url 'dashboard:overview' %}#analitica" data-bs-toggle="tooltip" data-bs-placement="right" title="Anal&iacute;tica">
+              <i class="bi bi-graph-up-arrow"></i><span class="link-text">Anal&iacute;tica</span>
+            </a>
+          </nav>
+        </div>
+        {% endwith %}
+      </div>
+
+      <div class="sidebar-footer mt-auto pt-3">
+        {% if user.is_authenticated %}
+          <div class="sidebar-user mb-3">
+            <div class="user-avatar d-inline-flex align-items-center justify-content-center rounded-circle">
+              <i class="bi bi-person-fill"></i>
+            </div>
+            <div>
+              <span class="d-block fw-semibold link-text">{{ user.get_full_name|default:user.username }}</span>
+              <small class="text-white-50 link-text">Sesi&oacute;n activa</small>
+            </div>
+          </div>
+          <a class="btn btn-outline-light w-100 btn-sm sidebar-action" href="{% url 'logout' %}" data-bs-toggle="tooltip" data-bs-placement="right" title="Cerrar sesi&oacute;n">
+            <i class="bi bi-box-arrow-right"></i> <span class="link-text">Cerrar sesi&oacute;n</span>
+          </a>
+        {% else %}
+          <a class="btn btn-light w-100 btn-sm sidebar-action" href="{% url 'login' %}" data-bs-toggle="tooltip" data-bs-placement="right" title="Iniciar sesi&oacute;n">
+            <i class="bi bi-box-arrow-in-right"></i> <span class="link-text">Iniciar sesi&oacute;n</span>
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  </aside>
+
+  <div class="sidebar-backdrop" data-sidebar-backdrop></div>
+
+  <div class="app-main flex-grow-1 d-flex flex-column">
+    <header class="app-topbar shadow-sm">
+      <div class="topbar-left d-flex align-items-center gap-3 flex-wrap flex-lg-nowrap">
+        <button type="button" class="btn btn-outline-primary btn-icon d-lg-none" data-sidebar-toggle="mobile" aria-label="Abrir men&uacute;">
+          <i class="bi bi-list"></i>
+        </button>
+        <h1 class="page-title h5 mb-0 fw-semibold text-primary-emphasis">{% block page_title %}Panel de control{% endblock %}</h1>
+        <span class="topbar-slogan badge text-bg-light text-uppercase fw-semibold"><span class="slogan-text">Tu taller, siempre en marcha</span></span>
+      </div>
+      <form class="header-search d-none d-lg-flex align-items-center gap-2" action="{% url 'dashboard:overview' %}" method="get">
+        <div class="search-field d-flex align-items-center flex-grow-1">
+          <i class="bi bi-search"></i>
+          <input type="text" class="form-control" placeholder="Busca clientes, citas o servicios..." name="q" value="{{ request.GET.q }}">
+        </div>
+        <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i></button>
+      </form>
+      <div class="topbar-right d-flex align-items-center gap-2 flex-wrap justify-content-end">
+        {% block topbar_meta %}
+          <span class="badge bg-primary-subtle text-primary-emphasis d-none d-md-inline">Business Intelligence</span>
+        {% endblock %}
+        {% block topbar_actions %}{% endblock %}
+        <button id="toggleSectionContrast" type="button" class="btn btn-outline-secondary btn-sm ms-auto ms-md-0">
+          <i class="bi bi-moon-stars"></i> Contraste
+        </button>
+      </div>
+    </header>
+
+    <main class="app-content flex-grow-1 py-4" data-app-main>
+      <div class="container-fluid">
+        {% if messages %}
+          <div class="app-messages mb-4">
+            {% for message in messages %}
+              <div class="alert {% if message.level_tag == 'error' %}alert-danger{% elif message.level_tag == 'debug' %}alert-secondary{% else %}alert-{{ message.level_tag }}{% endif %} alert-dismissible fade show shadow-sm d-flex align-items-center gap-2 mb-2" role="alert">
+                <i class="bi {% if message.level_tag == 'success' %}bi-check-circle-fill text-success{% elif message.level_tag == 'warning' %}bi-exclamation-triangle-fill text-warning{% elif message.level_tag == 'error' %}bi-exclamation-octagon-fill text-danger{% else %}bi-info-circle-fill text-primary{% endif %} fs-5"></i>
+                <div class="flex-grow-1">{{ message }}</div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+              </div>
+              <div class="app-toast-data d-none" data-toast-level="{{ message.level_tag }}" data-toast-message="{{ message|escapejs }}"></div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        {% block page_summary %}{% endblock %}
+        {% block page_toolbar %}{% endblock %}
+        {% block content %}{% endblock %}
+      </div>
+    </main>
+
+    <footer class="app-footer border-top py-3">
+      <div class="container-fluid d-flex flex-wrap justify-content-between align-items-center gap-2 small text-muted">
+        <span>&copy; {% now "Y" %} Taller Mec&aacute;nico. Anal&iacute;tica y servicio de precisi&oacute;n.</span>
+        <span>Innovaci&oacute;n continua para tu taller.</span>
+      </div>
+    </footer>
+  </div>
+</div>
+
+<div class="toast-container position-fixed top-0 end-0 p-3" id="appToastContainer" aria-live="polite" aria-atomic="true"></div>
+
+<!-- JS -->
+<script src="https://cdn.jsdelivr.net/npm/axios@1.7.7/dist/axios.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  const body = document.body;
+  const contrastBtn = document.getElementById('toggleSectionContrast');
+  const sidebarToggles = document.querySelectorAll('[data-sidebar-toggle]');
+  const backdrop = document.querySelector('[data-sidebar-backdrop]');
+  const mediaQuery = window.matchMedia('(max-width: 991px)');
+  const toastContainer = document.getElementById('appToastContainer');
+  const toastDataset = document.querySelectorAll('.app-toast-data[data-toast-message]');
+
+  const decodeMessage = (value) => {
+    if (!value) return '';
+    try {
+      const safe = value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+      return JSON.parse(`"${safe}"`);
+    } catch (err) {
+      return value;
+    }
+  };
+
+  const toastVisual = (level) => {
+    switch (level) {
+      case 'success':
+        return { variant: 'success', icon: 'bi-check-circle-fill' };
+      case 'warning':
+        return { variant: 'warning', icon: 'bi-exclamation-triangle-fill' };
+      case 'error':
+        return { variant: 'danger', icon: 'bi-exclamation-octagon-fill' };
+      case 'debug':
+        return { variant: 'secondary', icon: 'bi-bug-fill' };
+      default:
+        return { variant: 'primary', icon: 'bi-info-circle-fill' };
+    }
+  };
+
+  const applyContrast = (enabled) => {
+    body.classList.toggle('section-dark-mode', enabled);
+    document.documentElement.setAttribute('data-bs-theme', enabled ? 'dark' : 'light');
+    if (!contrastBtn) return;
+    contrastBtn.classList.toggle('btn-outline-secondary', !enabled);
+    contrastBtn.classList.toggle('btn-secondary', enabled);
+    contrastBtn.innerHTML = enabled
+      ? '<i class="bi bi-sun-fill"></i> Contraste'
+      : '<i class="bi bi-moon-stars"></i> Contraste';
+  };
+
+  if (contrastBtn) {
+    const storedContrast = localStorage.getItem('sectionDarkMode') === '1';
+    applyContrast(storedContrast);
+    contrastBtn.addEventListener('click', () => {
+      const enabled = !body.classList.contains('section-dark-mode');
+      applyContrast(enabled);
+      localStorage.setItem('sectionDarkMode', enabled ? '1' : '0');
+    });
+  }
+
+  if (toastContainer && toastDataset.length && window.bootstrap && typeof window.bootstrap.Toast === 'function') {
+    toastDataset.forEach((node, index) => {
+      const messageRaw = node.dataset.toastMessage || '';
+      const level = node.dataset.toastLevel || 'info';
+      const { variant, icon } = toastVisual(level);
+      const toastEl = document.createElement('div');
+      toastEl.className = `toast align-items-center text-bg-${variant} border-0 shadow-sm`;
+      toastEl.setAttribute('role', 'status');
+      toastEl.setAttribute('aria-live', 'assertive');
+      toastEl.setAttribute('aria-atomic', 'true');
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'd-flex';
+      const bodyEl = document.createElement('div');
+      bodyEl.className = 'toast-body d-flex gap-2 align-items-start';
+      const iconEl = document.createElement('i');
+      iconEl.className = `bi ${icon} flex-shrink-0`;
+      const textEl = document.createElement('span');
+      textEl.textContent = decodeMessage(messageRaw);
+
+      bodyEl.append(iconEl, textEl);
+      wrapper.appendChild(bodyEl);
+
+      const closeBtn = document.createElement('button');
+      closeBtn.type = 'button';
+      closeBtn.className = 'btn-close btn-close-white me-2 m-auto';
+      closeBtn.setAttribute('data-bs-dismiss', 'toast');
+      closeBtn.setAttribute('aria-label', 'Cerrar');
+      wrapper.appendChild(closeBtn);
+
+      toastEl.appendChild(wrapper);
+      toastContainer.appendChild(toastEl);
+
+      const toast = new bootstrap.Toast(toastEl, { delay: 5500, autohide: true });
+      setTimeout(() => toast.show(), 180 * index);
+    });
+  }
+
+  const isSmall = () => mediaQuery.matches;
+  let persistedCollapsed = localStorage.getItem('sidebarCollapsed') === '1';
+
+  const updateToggleIcons = (collapsed) => {
+    sidebarToggles.forEach(btn => {
+      if (btn.dataset.sidebarToggle === 'desktop') {
+        btn.innerHTML = collapsed ? '<i class="bi bi-chevron-right"></i>' : '<i class="bi bi-chevron-left"></i>';
+        btn.setAttribute('aria-label', collapsed ? 'Expandir men&uacute;' : 'Contraer men&uacute;');
+      }
+    });
+  };
+
+  const setCollapsed = (collapsed) => {
+    body.classList.toggle('sidebar-collapsed', collapsed);
+    updateToggleIcons(collapsed);
+  };
+
+  const openOverlay = () => {
+    if (!backdrop) return;
+    body.classList.add('sidebar-open');
+    backdrop.classList.add('show');
+  };
+
+  const closeOverlay = () => {
+    if (!backdrop) return;
+    body.classList.remove('sidebar-open');
+    backdrop.classList.remove('show');
+  };
+
+  const syncLayout = () => {
+    if (isSmall()) {
+      setCollapsed(true);
+      closeOverlay();
+    } else {
+      setCollapsed(persistedCollapsed);
+      closeOverlay();
+    }
+  };
+
+  syncLayout();
+
+  if (window.bootstrap && typeof window.bootstrap.Tooltip === 'function') {
+    const tooltipElements = Array.from(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipElements.forEach(element => {
+      new bootstrap.Tooltip(element, {
+        container: 'body',
+        boundary: document.body,
+        trigger: 'hover focus'
+      });
+    });
+  }
+
+  sidebarToggles.forEach(btn => {
+    btn.addEventListener('click', (event) => {
+      event.preventDefault();
+      const mode = btn.dataset.sidebarToggle;
+      if (mode === 'desktop') {
+        const next = !body.classList.contains('sidebar-collapsed');
+        persistedCollapsed = next;
+        localStorage.setItem('sidebarCollapsed', next ? '1' : '0');
+        setCollapsed(next);
+      } else if (mode === 'mobile') {
+        if (body.classList.contains('sidebar-open')) {
+          closeOverlay();
+          setCollapsed(true);
+        } else {
+          setCollapsed(false);
+          openOverlay();
+        }
+      }
+    });
+  });
+
+  if (backdrop) {
+    backdrop.addEventListener('click', () => {
+      closeOverlay();
+      setCollapsed(true);
+    });
+  }
+
+  const handleMediaChange = () => {
+    syncLayout();
+  };
+
+  if (mediaQuery.addEventListener) {
+    mediaQuery.addEventListener('change', handleMediaChange);
+  } else if (mediaQuery.addListener) {
+    mediaQuery.addListener(handleMediaChange);
+  }
+});
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

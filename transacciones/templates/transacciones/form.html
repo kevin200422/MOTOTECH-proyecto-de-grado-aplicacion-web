@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+  <h1 class="h4 mb-0">{{ title }}</h1>
+  <a class="btn btn-link" href="{% url 'transacciones:list' %}"><i class="bi bi-arrow-left-short"></i> Volver al listado</a>
+</div>
+
+{% if form.non_field_errors or form.errors %}
+  <div class="alert alert-danger shadow-sm">
+    <strong>No se pudo guardar:</strong>
+    <ul class="mb-0 mt-2">
+      {% for error in form.non_field_errors %}
+        <li>{{ error }}</li>
+      {% endfor %}
+      {% for field in form.visible_fields %}
+        {% for error in field.errors %}
+          <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+        {% endfor %}
+      {% endfor %}
+    </ul>
+  </div>
+{% endif %}
+
+<form method="post" class="row g-4">
+  {% csrf_token %}
+  <div class="col-12 col-xl-8">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-4">
+        <h2 class="h6 text-uppercase text-muted mb-3">Datos de la transacción</h2>
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label">Cita asociada</label>
+            {{ form.cita }}
+            {% if form.cita.errors %}<div class="text-danger small">{{ form.cita.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Subtotal (COP)</label>
+            {{ form.subtotal }}
+            <small class="text-muted">Monto antes de descuentos o propinas.</small>
+            {% if form.subtotal.errors %}<div class="text-danger small">{{ form.subtotal.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Monto pagado (COP)</label>
+            {{ form.monto }}
+            <small class="text-muted">Se actualizará si aplica canje de puntos.</small>
+            {% if form.monto.errors %}<div class="text-danger small">{{ form.monto.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Método de pago</label>
+            {{ form.metodo_pago }}
+            {% if form.metodo_pago.errors %}<div class="text-danger small">{{ form.metodo_pago.errors }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-xl-4">
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h2 class="h6 text-uppercase text-muted mb-0">Puntos del cliente</h2>
+          {% if cliente_loyalty %}
+            <span class="badge text-bg-primary">Saldo: {{ cliente_loyalty.saldo|intcomma }} pts</span>
+          {% endif %}
+        </div>
+        {% if cliente_loyalty %}
+          <p class="small text-muted mb-3">
+            Equivalencia: {{ cliente_loyalty.equivalencia_puntos|intcomma }} pts =
+            {{ cliente_loyalty.equivalencia_valor|intcomma }} COP.
+          </p>
+          <div class="mb-3">
+            <label class="form-label">Puntos a canjear</label>
+            {{ form.puntos_a_canjear }}
+            {% if form.puntos_a_canjear.errors %}<div class="text-danger small">{{ form.puntos_a_canjear.errors }}</div>{% endif %}
+          </div>
+          {% if calculo_puntos_preview %}
+            <div class="alert alert-primary small mb-3" role="alert">
+              <strong>{{ calculo_puntos_preview.puntos|intcomma }} pts estimados</strong><br>
+              <span class="d-block text-muted">{{ calculo_puntos_preview.descripcion }}</span>
+            </div>
+          {% endif %}
+        {% else %}
+          <p class="text-muted small">Selecciona la cita para consultar el saldo disponible.</p>
+          <div class="mb-3">
+            <label class="form-label">Puntos a canjear</label>
+            {{ form.puntos_a_canjear }}
+            {% if form.puntos_a_canjear.errors %}<div class="text-danger small">{{ form.puntos_a_canjear.errors }}</div>{% endif %}
+          </div>
+        {% endif %}
+        <button class="btn btn-outline-primary w-100" type="submit">Guardar transacción</button>
+      </div>
+    </div>
+    <div class="alert alert-info small" role="alert">
+      <strong>Regla base:</strong> {{ config_puntos.puntos_por_monto }} ptos por cada {{ config_puntos.monto_base_cop|intcomma }} COP.
+      {% if config_puntos.niveles_config %}
+        <br><span class="text-muted">Beneficios avanzados: {{ config_puntos.niveles_config|length }} niveles con multiplicadores activos.</span>
+      {% endif %}
+    </div>
+  </div>
+</form>
+{% endblock %}

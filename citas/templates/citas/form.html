@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% load static form_extras %}
+
+{% block title %}{% if object %}Editar cita{% else %}Nueva cita{% endif %}{% endblock %}
+
+{% block page_toolbar %}
+<div class="page-toolbar">
+  <div>
+    <h2 class="page-toolbar__title mb-1">{% if object %}Editar cita{% else %}Nueva cita{% endif %}</h2>
+    <p class="text-muted small mb-0">Programa servicios y notifica al equipo con informaci&oacute;n consistente.</p>
+  </div>
+  <div class="page-toolbar__actions">
+    <a class="btn btn-outline-secondary btn-sm" href="{% url 'citas:list' %}">
+      <i class="bi bi-arrow-left"></i> Ver agenda
+    </a>
+    {% if object %}
+      <a class="btn btn-outline-primary btn-sm" href="{% url 'citas:detail' object.pk %}">
+        <i class="bi bi-eye"></i> Ver detalle
+      </a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-xl-8 col-xxl-7">
+    <div class="card shadow-sm">
+      <div class="card-header border-0 pb-0">
+        <h5 class="mb-1">Datos de la cita</h5>
+        <p class="text-muted small mb-0">Selecciona cliente, veh&iacute;culo y ventanas horarias para coordinar el servicio.</p>
+      </div>
+      <div class="card-body">
+        <form method="post" novalidate>
+          {% csrf_token %}
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger mb-4" role="alert">
+              {% for error in form.non_field_errors %}
+                <div>{{ error }}</div>
+              {% endfor %}
+            </div>
+          {% endif %}
+
+          <div class="row g-3">
+            <div class="col-12 col-lg-6">
+              <label class="form-label" for="{{ form.cliente.id_for_label }}">Cliente</label>
+              {{ form.cliente|add_class:"form-select{% if form.cliente.errors %} is-invalid{% endif %}" }}
+              <div class="form-text">Al cambiar el cliente se filtrar&aacute;n los veh&iacute;culos disponibles.</div>
+              {% if form.cliente.errors %}<div class="text-danger small">{{ form.cliente.errors }}</div>{% endif %}
+            </div>
+            <div class="col-12 col-lg-6">
+              <label class="form-label" for="{{ form.vehiculo.id_for_label }}">Veh&iacute;culo</label>
+              {{ form.vehiculo|add_class:"form-select{% if form.vehiculo.errors %} is-invalid{% endif %}" }}
+              {% if form.vehiculo.errors %}<div class="text-danger small">{{ form.vehiculo.errors }}</div>{% endif %}
+            </div>
+
+            <div class="col-12 col-lg-6">
+              <label class="form-label" for="{{ form.servicio.id_for_label }}">Servicio</label>
+              {{ form.servicio|add_class:"form-select{% if form.servicio.errors %} is-invalid{% endif %}" }}
+              {% if form.servicio.errors %}<div class="text-danger small">{{ form.servicio.errors }}</div>{% endif %}
+            </div>
+            <div class="col-12 col-sm-6 col-lg-3">
+              <label class="form-label" for="{{ form.fecha_inicio.id_for_label }}">Inicio</label>
+              {{ form.fecha_inicio|add_class:"form-control{% if form.fecha_inicio.errors %} is-invalid{% endif %}" }}
+              {% if form.fecha_inicio.errors %}<div class="text-danger small">{{ form.fecha_inicio.errors }}</div>{% endif %}
+            </div>
+            <div class="col-12 col-sm-6 col-lg-3">
+              <label class="form-label" for="{{ form.fecha_fin.id_for_label }}">Fin</label>
+              {{ form.fecha_fin|add_class:"form-control{% if form.fecha_fin.errors %} is-invalid{% endif %}" }}
+              {% if form.fecha_fin.errors %}<div class="text-danger small">{{ form.fecha_fin.errors }}</div>{% endif %}
+            </div>
+
+            <div class="col-12 col-sm-6 col-lg-4">
+              <label class="form-label" for="{{ form.estado.id_for_label }}">Estado</label>
+              {{ form.estado|add_class:"form-select{% if form.estado.errors %} is-invalid{% endif %}" }}
+              {% if form.estado.errors %}<div class="text-danger small">{{ form.estado.errors }}</div>{% endif %}
+            </div>
+
+            {% if form.notas %}
+            <div class="col-12 col-lg-8">
+              <label class="form-label" for="{{ form.notas.id_for_label }}">Notas</label>
+              {{ form.notas|add_class:"form-control{% if form.notas.errors %} is-invalid{% endif %}" }}
+              {% if form.notas.errors %}<div class="text-danger small">{{ form.notas.errors }}</div>{% endif %}
+            </div>
+            {% endif %}
+          </div>
+
+          <div class="d-flex justify-content-end flex-wrap gap-2 mt-4">
+            <a class="btn btn-outline-secondary" href="{% url 'citas:list' %}">Cancelar</a>
+            <button class="btn btn-primary" type="submit">Guardar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if duraciones_servicio %}
+  {{ duraciones_servicio|json_script:"duracionesServicio" }}
+{% endif %}
+
+{# --- JS: selects dependientes cliente &lt;-&gt; veh&iacute;culo --- #}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const clienteSel = document.getElementById("id_cliente");
+  const vehiculoSel = document.getElementById("id_vehiculo");
+  const servicioSel = document.getElementById("id_servicio");
+  const inicioInput = document.getElementById("id_fecha_inicio");
+  const finInput = document.getElementById("id_fecha_fin");
+  const duracionesEl = document.getElementById("duracionesServicio");
+  const duraciones = duracionesEl ? JSON.parse(duracionesEl.textContent || "{}") : {};
+
+  const formatLocal = (dateObj) => {
+    const pad = (v) => String(v).padStart(2, "0");
+    return `${dateObj.getFullYear()}-${pad(dateObj.getMonth()+1)}-${pad(dateObj.getDate())}T${pad(dateObj.getHours())}:${pad(dateObj.getMinutes())}`;
+  };
+  const roundToInterval = (dateObj, minutes = 15) => {
+    const ms = minutes * 60000;
+    return new Date(Math.ceil(dateObj.getTime() / ms) * ms);
+  };
+
+  const autocompletarFin = (force = false) => {
+    if (!inicioInput || !finInput) return;
+    const startVal = inicioInput.value;
+    if (!startVal) return;
+
+    const startDate = new Date(startVal);
+    if (Number.isNaN(startDate.getTime())) return;
+
+    // Evita seleccionar fin antes del inicio
+    finInput.min = formatLocal(startDate);
+
+    const servicioId = servicioSel ? servicioSel.value : null;
+    const minutos = servicioId ? Number(duraciones[servicioId] || 0) : 0;
+    if (!minutos) {
+      if (force) {
+        finInput.value = "";
+        finInput.removeAttribute("min");
+      }
+      return;
+    }
+
+    const endCandidate = new Date(startDate.getTime() + minutos * 60000);
+    const currentEnd = finInput.value ? new Date(finInput.value) : null;
+    if (force || !currentEnd || Number.isNaN(currentEnd.getTime()) || currentEnd <= startDate) {
+      finInput.value = formatLocal(endCandidate);
+    }
+  };
+
+  if (inicioInput && !inicioInput.value) {
+    const nowRounded = roundToInterval(new Date());
+    inicioInput.value = formatLocal(nowRounded);
+    inicioInput.min = formatLocal(new Date());
+  }
+  if (inicioInput) {
+    inicioInput.addEventListener("change", () => autocompletarFin(false));
+  }
+  if (servicioSel) {
+    servicioSel.addEventListener("change", () => autocompletarFin(true));
+  }
+
+  if (clienteSel && vehiculoSel) {
+    clienteSel.addEventListener("change", async function() {
+      const cid = this.value;
+      vehiculoSel.innerHTML = '<option value="">Cargando...</option>';
+      try {
+        const url = "{% url 'citas:api_vehiculos' %}?cliente=" + encodeURIComponent(cid);
+        const r = await fetch(url, {headers: {"X-Requested-With":"fetch"}});
+        const data = await r.json();
+        vehiculoSel.innerHTML = '<option value="">Seleccione veh&iacute;culo</option>';
+        (data.results || []).forEach(it => {
+          const opt = document.createElement("option");
+          opt.value = it.id;
+          opt.textContent = it.text;
+          vehiculoSel.appendChild(opt);
+        });
+      } catch(e) {
+        vehiculoSel.innerHTML = '<option value="">(Error al cargar)</option>';
+      }
+    });
+  }
+
+  autocompletarFin(true);
+});
+</script>
+{% endblock %}

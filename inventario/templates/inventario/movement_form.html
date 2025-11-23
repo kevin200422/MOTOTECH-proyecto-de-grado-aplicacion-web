@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block title %}Movimiento de {{ repuesto.nombre }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8 col-xl-7">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div>
+        <h1 class="h3 mb-1">Registrar movimiento</h1>
+        <p class="text-muted mb-0">Actualiza el stock con una entrada o salida de inventario.</p>
+      </div>
+      <div class="d-flex gap-2">
+        <a class="btn btn-outline-secondary" href="{% url 'inventario:detail' repuesto.pk %}">
+          <i class="bi bi-arrow-left me-1"></i> Volver
+        </a>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body">
+        <div class="mb-3">
+          <div class="fw-semibold">{{ repuesto.nombre }}</div>
+          <div class="text-muted small">
+            Codigo {{ repuesto.codigo }} · Stock actual {{ repuesto.stock }} {{ repuesto.unidad_medida }}
+          </div>
+        </div>
+
+        <form method="post" novalidate>
+          {% csrf_token %}
+
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+              {% for error in form.non_field_errors %}
+                <div>{{ error }}</div>
+              {% endfor %}
+            </div>
+          {% endif %}
+
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label text-muted text-uppercase small" for="{{ form.tipo.id_for_label }}">Tipo</label>
+              {{ form.tipo }}
+              {% if form.tipo.errors %}
+                <div class="invalid-feedback d-block">{% for error in form.tipo.errors %}{{ error }}{% endfor %}</div>
+              {% endif %}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label text-muted text-uppercase small" for="{{ form.cantidad.id_for_label }}">Cantidad</label>
+              {{ form.cantidad }}
+              {% if form.cantidad.errors %}
+                <div class="invalid-feedback d-block">{% for error in form.cantidad.errors %}{{ error }}{% endfor %}</div>
+              {% endif %}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label text-muted text-uppercase small" for="{{ form.costo_unitario.id_for_label }}">Costo unitario</label>
+              {{ form.costo_unitario }}
+              {% if form.costo_unitario.errors %}
+                <div class="invalid-feedback d-block">{% for error in form.costo_unitario.errors %}{{ error }}{% endfor %}</div>
+              {% endif %}
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label text-muted text-uppercase small" for="{{ form.referencia.id_for_label }}">Referencia</label>
+              {{ form.referencia }}
+              {% if form.referencia.errors %}
+                <div class="invalid-feedback d-block">{% for error in form.referencia.errors %}{{ error }}{% endfor %}</div>
+              {% endif %}
+            </div>
+            <div class="col-12">
+              <label class="form-label text-muted text-uppercase small" for="{{ form.notas.id_for_label }}">Notas</label>
+              {{ form.notas }}
+              {% if form.notas.errors %}
+                <div class="invalid-feedback d-block">{% for error in form.notas.errors %}{{ error }}{% endfor %}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="alert alert-light mt-3" role="alert">
+            Las salidas se descontaran del stock actual. Asegurate de registrar las entradas antes de generar una salida.
+          </div>
+
+          <div class="d-flex justify-content-end gap-2 mt-3">
+            <a class="btn btn-outline-secondary" href="{% url 'inventario:detail' repuesto.pk %}">Cancelar</a>
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-check2-circle me-1"></i> Guardar movimiento
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <h2 class="h6 text-uppercase text-muted mb-3">Ultimos movimientos</h2>
+        {% if movimientos_recientes %}
+          <div class="table-responsive">
+            <table class="table table-sm align-middle">
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Tipo</th>
+                  <th>Cantidad</th>
+                  <th>Referencia</th>
+                  <th>Usuario</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for mov in movimientos_recientes %}
+                  <tr>
+                    <td>{{ mov.fecha|date:"Y-m-d H:i" }}</td>
+                    <td>
+                      {% if mov.tipo == mov.Tipo.ENTRADA %}
+                        <span class="badge text-bg-success">Entrada</span>
+                      {% else %}
+                        <span class="badge text-bg-danger">Salida</span>
+                      {% endif %}
+                    </td>
+                    <td>{{ mov.cantidad }}</td>
+                    <td>{{ mov.referencia|default:"-" }}</td>
+                    <td>
+                      {% if mov.realizado_por %}
+                        {{ mov.realizado_por.get_full_name|default:mov.realizado_por.username }}
+                      {% else %}
+                        -
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <p class="text-muted small mb-0">Este repuesto aún no tiene movimientos registrados.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

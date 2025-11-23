@@ -1,0 +1,42 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Iniciar sesi&oacute;n</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+<body>
+  <div class="login-wrapper">
+    <div class="login-card">
+      <h1>Iniciar sesi&oacute;n</h1>
+
+      {% if form.non_field_errors %}
+        <ul class="errorlist">
+          {% for error in form.non_field_errors %}
+            <li>{{ error }}</li>
+          {% endfor %}
+        </ul>
+      {% elif form.errors %}
+        <p class="error">Usuario o contrase&ntilde;a incorrectos.</p>
+      {% endif %}
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="form-group">
+          <label for="{{ form.username.id_for_label }}">Usuario</label>
+          {{ form.username }}
+          {{ form.username.errors }}
+        </div>
+        <div class="form-group">
+          <label for="{{ form.password.id_for_label }}">Contrase&ntilde;a</label>
+          {{ form.password }}
+          {{ form.password.errors }}
+        </div>
+        <button type="submit">Entrar</button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

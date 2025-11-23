@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Eliminar servicio{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-body">
+        <h1 class="h4 mb-3">Seguro que deseas eliminar {{ servicio.nombre }}?</h1>
+        <p class="text-muted mb-3">
+          Esta accion eliminara el servicio del catalogo. Las citas asociadas conservaran el nombre del servicio, pero no podran volver a utilizarlo.
+        </p>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="p-3 bg-light rounded">
+              <div class="text-muted small text-uppercase">Precio actual</div>
+              <div class="fw-semibold">${{ servicio.precio|floatformat:2 }}</div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="p-3 bg-light rounded">
+              <div class="text-muted small text-uppercase">Costo interno</div>
+              <div class="fw-semibold">${{ servicio.costo|floatformat:2 }}</div>
+            </div>
+          </div>
+        </div>
+        <div class="alert alert-warning mt-4" role="alert">
+          Esta accion no se puede deshacer.
+        </div>
+        <form method="post" class="d-flex gap-2">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger">Eliminar definitivamente</button>
+          <a href="{% url 'servicios:detail' servicio.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

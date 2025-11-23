@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Transacciones{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+  <h1 class="h4 mb-0">Transacciones</h1>
+  {% if user.is_superuser or user.is_staff %}
+    <a class="btn btn-primary" href="{% url 'transacciones:create' %}"><i class="bi bi-plus-circle me-1"></i> Registrar transacción</a>
+  {% endif %}
+</div>
+
+<div class="card border-0 shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>ID</th>
+          <th>Cliente</th>
+          <th>Servicio</th>
+          <th>Subtotal</th>
+          <th>Descuento</th>
+          <th>Monto pagado</th>
+          <th>Pts usados</th>
+          <th>Pts otorgados</th>
+          <th>Método</th>
+          <th>Fecha</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in transacciones %}
+        <tr>
+          <td>{{ t.id }}</td>
+          <td>{{ t.cita.cliente.nombre }}</td>
+          <td>{{ t.cita.servicio.nombre }}</td>
+          <td>${{ t.subtotal|intcomma }}</td>
+          <td>{% if t.descuento_puntos %}-${{ t.descuento_puntos|intcomma }}{% else %}<span class="text-muted">-</span>{% endif %}</td>
+          <td>${{ t.monto|intcomma }}</td>
+          <td>{% if t.puntos_redimidos %}{{ t.puntos_redimidos|intcomma }}{% else %}<span class="text-muted">-</span>{% endif %}</td>
+          <td>{% if t.puntos_otorgados %}<span class="badge text-bg-success">Sí</span>{% else %}<span class="text-muted">No</span>{% endif %}</td>
+          <td>{{ t.get_metodo_pago_display }}</td>
+          <td>{{ t.fecha|date:"d/m/Y H:i" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="10" class="text-center text-muted py-4">No hay transacciones registradas.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

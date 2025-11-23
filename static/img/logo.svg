@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-labelledby="title desc">
+<title id="title">MotoTech</title>
+<desc id="desc">Logo circular de MotoTech con un engrane digital y trazos de circuito en un fondo azul profundo.</desc>
+<defs>
+  <linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#031830" />
+    <stop offset="45%" stop-color="#053d6b" />
+    <stop offset="100%" stop-color="#0b6ad1" />
+  </linearGradient>
+  <linearGradient id="ring-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+    <stop offset="0%" stop-color="#f2f6ff" />
+    <stop offset="100%" stop-color="#b9cfe5" />
+  </linearGradient>
+  <linearGradient id="gear-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#06c3ff" />
+    <stop offset="100%" stop-color="#0d8fff" />
+  </linearGradient>
+  <linearGradient id="gear-core" x1="0%" y1="0%" x2="0%" y2="100%">
+    <stop offset="0%" stop-color="#05233d" />
+    <stop offset="100%" stop-color="#083e67" />
+  </linearGradient>
+  <linearGradient id="circuit-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+    <stop offset="0%" stop-color="#94f7ff" />
+    <stop offset="100%" stop-color="#22c7ff" />
+  </linearGradient>
+</defs>
+<circle cx="80" cy="80" r="72" fill="url(#bg-grad)" />
+<circle cx="80" cy="80" r="70" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="2" />
+<circle cx="80" cy="80" r="68" fill="none" stroke="url(#ring-grad)" stroke-width="6" />
+
+<g transform="translate(80 60)">
+  <g fill="#0d89ff" opacity=".85">
+    <rect x="-5" y="-52" width="10" height="18" rx="4" />
+    <rect x="-5" y="-52" width="10" height="18" rx="4" transform="rotate(45)" />
+    <rect x="-5" y="-52" width="10" height="18" rx="4" transform="rotate(90)" />
+    <rect x="-5" y="-52" width="10" height="18" rx="4" transform="rotate(135)" />
+    <rect x="-5" y="-52" width="10" height="18" rx="4" transform="rotate(180)" />
+    <rect x="-5" y="-52" width="10" height="18" rx="4" transform="rotate(225)" />
+    <rect x="-5" y="-52" width="10" height="18" rx="4" transform="rotate(270)" />
+    <rect x="-5" y="-52" width="10" height="18" rx="4" transform="rotate(315)" />
+  </g>
+  <circle r="30" fill="url(#gear-grad)" />
+  <circle r="16" fill="url(#gear-core)" />
+  <circle r="6" fill="#8bf6ff" />
+</g>
+
+<g fill="none" stroke="url(#circuit-grad)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M38 110c16-22 32-33 52-38" opacity=".85" />
+  <path d="M52 118c12-18 28-25 46-24" opacity=".65" />
+  <path d="M64 80c12-8 20-14 26-24" />
+</g>
+<g fill="#031830" stroke="url(#circuit-grad)" stroke-width="3">
+  <circle cx="38" cy="110" r="7" />
+  <circle cx="52" cy="118" r="6" />
+  <circle cx="90" cy="72" r="5.5" />
+  <circle cx="102" cy="56" r="4.5" />
+</g>
+
+<text x="80" y="122" text-anchor="middle" font-family="'Poppins','Segoe UI','Inter',sans-serif" font-size="20" font-weight="700" letter-spacing=".05em" fill="#f8fbff">
+  Moto<tspan fill="#7ef8ff">Tech</tspan>
+</text>
+<text x="80" y="138" text-anchor="middle" font-family="'Inter','Segoe UI',sans-serif" font-size="10" fill="rgba(255,255,255,.78)" letter-spacing=".2em">
+  SISTEMA INTELIGENTE
+</text>
+</svg>

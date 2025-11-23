@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Historial de puntos · {{ cliente.nombre }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+  <div>
+    <h1 class="h4 mb-0">Historial de puntos</h1>
+    <p class="text-muted mb-0">{{ cliente.nombre }} · Saldo actual: {{ saldo|intcomma }} pts</p>
+  </div>
+  <div class="btn-group">
+    <a class="btn btn-outline-secondary btn-sm" href="{% url 'clientes:detail' cliente.pk %}"><i class="bi bi-arrow-left-short"></i> Regresar</a>
+    <a class="btn btn-primary btn-sm" href="{% url 'fidelizacion:ajustar_cliente' cliente.pk %}"><i class="bi bi-plus-circle"></i> Ajustar / bonificar</a>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Fecha</th>
+          <th>Tipo</th>
+          <th class="text-end">Puntos +</th>
+          <th class="text-end">Puntos -</th>
+          <th class="text-end">Saldo</th>
+          <th>Referencia</th>
+          <th>Motivo</th>
+          <th>Administrador</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for mov in page_obj %}
+        <tr>
+          <td>{{ mov.fecha|date:"Y-m-d H:i" }}</td>
+          <td><span class="badge text-bg-light text-uppercase">{{ mov.get_tipo_display }}</span></td>
+          <td class="text-end">{% if mov.puntos_ganados %}{{ mov.puntos_ganados|intcomma }}{% else %}<span class="text-muted">-</span>{% endif %}</td>
+          <td class="text-end">{% if mov.puntos_usados %}{{ mov.puntos_usados|intcomma }}{% else %}<span class="text-muted">-</span>{% endif %}</td>
+          <td class="text-end">{{ mov.saldo_resultante|intcomma }}</td>
+          <td>{{ mov.referencia|default:"-" }}</td>
+          <td>{{ mov.motivo|default:"-" }}</td>
+          <td>{{ mov.usuario_admin|default:"-" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="text-center text-muted py-4">Sin movimientos registrados.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-footer bg-white">
+    <nav>{{ page_obj.paginator.num_pages|pluralize:"Página,Páginas" }} · {{ page_obj }}</nav>
+    {% if page_obj.has_other_pages %}
+      <ul class="pagination pagination-sm mb-0">
+        {% if page_obj.has_previous %}
+          <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">«</a></li>
+        {% endif %}
+        {% for num in page_obj.paginator.page_range %}
+          {% if page_obj.number == num %}
+            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+          {% elif num > page_obj.number|add:-3 and num < page_obj.number|add:3 %}
+            <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+          {% endif %}
+        {% endfor %}
+        {% if page_obj.has_next %}
+          <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">»</a></li>
+        {% endif %}
+      </ul>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

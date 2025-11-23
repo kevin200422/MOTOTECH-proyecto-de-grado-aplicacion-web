@@ -1,0 +1,1 @@
+"""Top-level package for the Taller Mecánico project."""

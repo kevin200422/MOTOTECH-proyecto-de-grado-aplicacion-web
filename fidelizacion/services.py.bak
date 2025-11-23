@@ -1,0 +1,234 @@
+﻿"""
+Reusable business logic for the loyalty / fidelizaciÃ³n system.
+"""
+from __future__ import annotations
+
+from dataclasses import dataclass
+from decimal import Decimal
+from typing import Iterable, Optional
+
+from django.db import transaction
+from django.utils import timezone
+
+from clientes.models import Cliente
+from fidelizacion.models import ConfigPuntos, HistorialPuntos
+
+
+class LoyaltyError(Exception):
+    """Raised when a loyalty operation cannot be completed."""
+
+
+@dataclass(frozen=True)
+class LoyaltyComputation:
+    puntos: int
+    subtotal_cop: Decimal
+    descripcion: str = ""
+
+
+def get_config() -> ConfigPuntos:
+    """Convenience wrapper."""
+    return ConfigPuntos.load()
+
+
+def calcular_puntos(subtotal_cop: Decimal, config: Optional[ConfigPuntos] = None) -> int:
+    """
+    Calcula los puntos a otorgar para un subtotal dado, considerando
+    las reglas configuradas y el tope por factura.
+    """
+    config = config or get_config()
+    if subtotal_cop is None:
+        return 0
+    subtotal_cop = Decimal(subtotal_cop)
+    if subtotal_cop <= 0 or config.monto_base_cop <= 0:
+        return 0
+    factor = subtotal_cop // Decimal(config.monto_base_cop)
+    puntos = int(factor) * int(config.puntos_por_monto)
+    if config.puntos_max_por_factura:
+        puntos = min(puntos, int(config.puntos_max_por_factura))
+    return max(puntos, 0)
+
+
+def calcular_redencion_cop(puntos: int, config: Optional[ConfigPuntos] = None) -> Decimal:
+    """Convierte puntos a valor en COP segÃºn la configuraciÃ³n vigente."""
+    config = config or get_config()
+    if puntos <= 0 or config.puntos_equivalencia <= 0:
+        return Decimal("0.00")
+    factor = Decimal(config.valor_redencion_cop) / Decimal(config.puntos_equivalencia)
+    return (Decimal(puntos) * factor).quantize(Decimal("1.00"))
+
+
+def _actualizar_nivel(cliente: Cliente, config: ConfigPuntos) -> None:
+    """
+    Actualiza el campo nivel del cliente en funciÃ³n de la configuraciÃ³n.
+    `niveles_config` es un diccionario {'Bronce': 0, 'Plata': 5000, ...}
+    Se asigna el nivel de mayor umbral alcanzado.
+    """
+    niveles = config.niveles_config or {}
+    if not niveles:
+        return
+    saldo = cliente.puntos_saldo
+    elegido = ""
+    max_umbral = -1
+    for nombre, umbral in niveles.items():
+        try:
+            valor = int(umbral)
+        except (TypeError, ValueError):
+            continue
+        if saldo >= valor and valor >= max_umbral:
+            elegido = nombre
+            max_umbral = valor
+    if elegido != cliente.nivel:
+        cliente.nivel = elegido
+
+
+@transaction.atomic
+def otorgar_puntos(cliente: Cliente, subtotal_cop: Decimal, referencia: str, usuario_admin=None, motivo="") -> int:
+    """
+    Acredita puntos al cliente segÃºn el subtotal y registra el movimiento.
+    Retorna la cantidad de puntos otorgados.
+    """
+    config = get_config()
+    puntos = calcular_puntos(subtotal_cop, config=config)
+    if puntos <= 0:
+        return 0
+
+    cliente_locked = Cliente.objects.select_for_update().get(pk=cliente.pk)
+    cliente_locked.puntos_saldo += puntos
+    _actualizar_nivel(cliente_locked, config)
+    cliente_locked.save(update_fields=["puntos_saldo", "nivel", "actualizado"])
+
+    HistorialPuntos.objects.create(
+        cliente=cliente_locked,
+        tipo=HistorialPuntos.Tipo.GANA,
+        fecha=timezone.now(),
+        monto_pesos=Decimal(subtotal_cop).quantize(Decimal("1.00")),
+        puntos_ganados=puntos,
+        saldo_resultante=cliente_locked.puntos_saldo,
+        referencia=referencia,
+        usuario_admin=usuario_admin,
+        motivo=motivo or "Otorgamiento automÃ¡tico",
+    )
+    return puntos
+
+
+@transaction.atomic
+def canjear_puntos(cliente: Cliente, puntos: int, referencia: str, usuario_admin=None, motivo="") -> Decimal:
+    """
+    Debita puntos del cliente, valida saldo y registra el descuento.
+    Retorna el valor en COP equivalente al canje.
+    """
+    if puntos <= 0:
+        raise LoyaltyError("La cantidad de puntos a redimir debe ser positiva.")
+
+    config = get_config()
+    valor_cop = calcular_redencion_cop(puntos, config=config)
+    if valor_cop <= 0:
+        raise LoyaltyError("La configuraciÃ³n de conversiÃ³n de puntos no produce descuento vÃ¡lido.")
+
+    cliente_locked = Cliente.objects.select_for_update().get(pk=cliente.pk)
+    if cliente_locked.puntos_saldo < puntos:
+        raise LoyaltyError("El cliente no tiene puntos suficientes.")
+
+    cliente_locked.puntos_saldo -= puntos
+    _actualizar_nivel(cliente_locked, config)
+    cliente_locked.save(update_fields=["puntos_saldo", "nivel", "actualizado"])
+
+    HistorialPuntos.objects.create(
+        cliente=cliente_locked,
+        tipo=HistorialPuntos.Tipo.USA,
+        fecha=timezone.now(),
+        monto_pesos=valor_cop * Decimal("-1"),
+        puntos_usados=puntos,
+        saldo_resultante=cliente_locked.puntos_saldo,
+        referencia=referencia,
+        usuario_admin=usuario_admin,
+        motivo=motivo or "Canje aplicado",
+    )
+    return valor_cop
+
+
+@transaction.atomic
+def bonificar_puntos(cliente: Cliente, puntos: int, referencia: str, usuario_admin=None, motivo="BonificaciÃ³n manual") -> None:
+    """
+    BonificaciÃ³n o ajuste positivo de puntos. Usar valores negativos para ajustes en contra.
+    """
+    if puntos == 0:
+        raise LoyaltyError("Debe especificar puntos diferentes de cero para el ajuste.")
+
+    cliente_locked = Cliente.objects.select_for_update().get(pk=cliente.pk)
+    config = get_config()
+
+    nuevo_saldo = cliente_locked.puntos_saldo + puntos
+    if nuevo_saldo < 0:
+        raise LoyaltyError("El ajuste dejarÃ­a el saldo del cliente en negativo.")
+
+    cliente_locked.puntos_saldo = nuevo_saldo
+    _actualizar_nivel(cliente_locked, config)
+    cliente_locked.save(update_fields=["puntos_saldo", "nivel", "actualizado"])
+
+    tipo = HistorialPuntos.Tipo.BONO if puntos > 0 else HistorialPuntos.Tipo.AJUSTE
+
+    HistorialPuntos.objects.create(
+        cliente=cliente_locked,
+        tipo=tipo,
+        fecha=timezone.now(),
+        monto_pesos=Decimal("0.00"),
+        puntos_ganados=max(puntos, 0),
+        puntos_usados=abs(puntos) if puntos < 0 else 0,
+        saldo_resultante=cliente_locked.puntos_saldo,
+        referencia=referencia,
+        usuario_admin=usuario_admin,
+        motivo=motivo,
+    )
+
+
+@transaction.atomic
+def revertir_puntos(cliente: Cliente, referencia: str, usuario_admin=None, motivo="ReversiÃ³n automÃ¡tica") -> int:
+    """
+    Reversa los puntos asociados a una referencia concreta (por ejemplo anulaciÃ³n de factura).
+    Busca los movimientos con esa referencia e invierte su efecto.
+    """
+    movimientos = HistorialPuntos.objects.select_for_update().filter(cliente=cliente, referencia=referencia)
+    if not movimientos.exists():
+        raise LoyaltyError("No se encontraron movimientos asociados a la referencia indicada.")
+
+    delta = sum(m.puntos_ganados - m.puntos_usados for m in movimientos)
+    if delta == 0:
+        return 0
+
+    cliente_locked = Cliente.objects.select_for_update().get(pk=cliente.pk)
+    nuevo_saldo = cliente_locked.puntos_saldo - delta
+    if nuevo_saldo < 0:
+        nuevo_saldo = 0
+
+    cliente_locked.puntos_saldo = nuevo_saldo
+    config = get_config()
+    _actualizar_nivel(cliente_locked, config)
+    cliente_locked.save(update_fields=["puntos_saldo", "nivel", "actualizado"])
+
+    HistorialPuntos.objects.create(
+        cliente=cliente_locked,
+        tipo=HistorialPuntos.Tipo.REVERSA,
+        fecha=timezone.now(),
+        monto_pesos=Decimal("0.00"),
+        puntos_usados=max(delta, 0),
+        puntos_ganados=abs(delta) if delta < 0 else 0,
+        saldo_resultante=cliente_locked.puntos_saldo,
+        referencia=referencia,
+        usuario_admin=usuario_admin,
+        motivo=motivo,
+    )
+    return delta
+
+
+def obtener_saldo(cliente: Cliente) -> int:
+    cliente.refresh_from_db(fields=["puntos_saldo"])
+    return cliente.puntos_saldo
+
+
+def obtener_historial(cliente: Cliente, limit: Optional[int] = None) -> Iterable[HistorialPuntos]:
+    qs = cliente.movimientos_puntos.select_related("usuario_admin").order_by("-fecha")
+    if limit:
+        qs = qs[:limit]
+    return qs
+

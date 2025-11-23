@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Eliminar vehiculo{% endblock %}
+
+{% block content %}
+<h1 class="h3 mb-3">Confirma eliminar el vehiculo {{ vehiculo.placa }}?</h1>
+
+<div class="alert alert-warning" role="alert">
+  Esta accion no se puede deshacer. Se eliminaran tambien los datos relacionados que dependan de este registro.
+</div>
+
+<form method="post">
+  {% csrf_token %}
+  <button type="submit" class="btn btn-danger">Eliminar</button>
+  <a href="{% url 'vehiculos:detail' vehiculo.pk %}" class="btn btn-secondary">Cancelar</a>
+</form>
+{% endblock %}

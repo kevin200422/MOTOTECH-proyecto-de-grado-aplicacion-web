@@ -1,0 +1,274 @@
+{% extends "base.html" %}
+
+{% block title %}{{ repuesto.nombre }}{% endblock %}
+
+{% block extra_head %}
+<style>
+.hero-card {
+  border: 0;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(32, 201, 151, 0.92), rgba(13, 110, 253, 0.85));
+  color: #fff;
+}
+.metric-pill {
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  padding: 0.5rem 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.timeline::before {
+  content: "";
+  position: absolute;
+  left: 10px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: rgba(13, 110, 253, 0.15);
+}
+.timeline-item {
+  position: relative;
+  padding-left: 32px;
+}
+.timeline-item::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 6px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #0d6efd;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-4">
+  <div>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-2">
+        <li class="breadcrumb-item"><a href="{% url 'inventario:list' %}">Inventario</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ repuesto.nombre }}</li>
+      </ol>
+    </nav>
+    <h1 class="h3 mb-0">{{ repuesto.nombre }}</h1>
+  </div>
+  <div class="btn-group">
+    <a class="btn btn-outline-secondary btn-sm" href="{% url 'inventario:list' %}">
+      <i class="bi bi-arrow-left-short me-1"></i> Volver
+    </a>
+    <a class="btn btn-outline-primary btn-sm" href="{% url 'inventario:update' repuesto.pk %}">
+      <i class="bi bi-pencil-square me-1"></i> Editar
+    </a>
+    <a class="btn btn-outline-danger btn-sm" href="{% url 'inventario:delete' repuesto.pk %}">
+      <i class="bi bi-trash3 me-1"></i> Eliminar
+    </a>
+  </div>
+</div>
+
+<div class="hero-card shadow-sm p-4 mb-4">
+  <div class="row gy-3 align-items-center">
+    <div class="col-md-7">
+      <div class="d-flex flex-wrap align-items-center gap-3">
+        <span class="badge bg-light text-dark text-uppercase">{{ repuesto.codigo }}</span>
+        <span class="metric-pill">
+          <i class="bi bi-stack"></i>
+          Stock {{ repuesto.stock }} {{ repuesto.unidad_medida }}
+        </span>
+        <span class="metric-pill">
+          <i class="bi bi-graph-up"></i>
+          Margen {{ repuesto.margen_porcentaje }}%
+        </span>
+      </div>
+      <div class="mt-3 text-white-75">
+        {{ repuesto.descripcion|default:"Sin descripcion detallada para este repuesto." }}
+      </div>
+    </div>
+    <div class="col-md-5 text-md-end">
+      <div class="d-flex flex-column flex-md-row justify-content-end gap-2">
+        <a class="btn btn-light btn-sm" href="{% url 'inventario:movement_create' repuesto.pk %}">
+          <i class="bi bi-plus-circle me-1"></i> Registrar movimiento
+        </a>
+        <a class="btn btn-outline-light btn-sm" href="#">
+          <i class="bi bi-download me-1"></i> Exportar ficha (pendiente)
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-7">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <h2 class="h6 text-uppercase text-muted mb-3">Resumen operativo</h2>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="p-3 bg-light rounded">
+              <div class="text-muted small text-uppercase">Costos</div>
+              <div class="fw-semibold fs-6">Costo unitario: ${{ repuesto.costo_unitario|floatformat:2 }}</div>
+              <div class="text-muted small">Precio venta: ${{ repuesto.precio_venta|floatformat:2 }}</div>
+              <div class="text-muted small">Margen unitario: ${{ repuesto.margen_unitario|floatformat:2 }}</div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="p-3 bg-light rounded">
+              <div class="text-muted small text-uppercase">Valor del stock</div>
+              <div class="fw-semibold fs-6">Inventario: ${{ repuesto.valor_inventario|floatformat:2 }}</div>
+              <div class="text-muted small">Potencial venta: ${{ repuesto.valor_potencial|floatformat:2 }}</div>
+              <div class="text-muted small">Disponible: {{ repuesto.stock_disponible }} {{ repuesto.unidad_medida }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row g-3 mt-1">
+          <div class="col-md-4">
+            <div class="p-3 bg-light rounded">
+              <div class="text-muted small text-uppercase">Stock minimo</div>
+              <div class="fw-semibold fs-6">{{ repuesto.stock_minimo }}</div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="p-3 bg-light rounded">
+              <div class="text-muted small text-uppercase">Stock seguridad</div>
+              <div class="fw-semibold fs-6">{{ repuesto.stock_seguridad }}</div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="p-3 bg-light rounded">
+              <div class="text-muted small text-uppercase">Stock maximo</div>
+              <div class="fw-semibold fs-6">{{ repuesto.stock_maximo|default:"-" }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <h2 class="h6 text-uppercase text-muted mb-2">Logistica</h2>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="p-3 border rounded">
+                <div class="text-muted small text-uppercase">Proveedor habitual</div>
+                <div class="fw-semibold">{{ repuesto.proveedor|default:"No asignado" }}</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="p-3 border rounded">
+                <div class="text-muted small text-uppercase">Ubicacion</div>
+                <div class="fw-semibold">{{ repuesto.ubicacion|default:"Sin ubicacion" }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="text-muted small mt-4">
+          <i class="bi bi-clock-history me-1"></i>
+          Registrado {{ repuesto.creado|date:"Y-m-d H:i" }} &middot; Ultima actualizacion {{ repuesto.actualizado|timesince }} ago
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <h2 class="h6 text-uppercase text-muted mb-3">Movimientos recientes</h2>
+        {% if movimientos %}
+          <div class="timeline position-relative">
+            {% for mov in movimientos %}
+              <div class="timeline-item mb-4">
+                <div class="d-flex justify-content-between">
+                  <div>
+                    <div class="fw-semibold">
+                      {% if mov.tipo == mov.Tipo.ENTRADA %}
+                        <span class="text-success">Entrada</span>
+                      {% else %}
+                        <span class="text-danger">Salida</span>
+                      {% endif %}
+                      · {{ mov.cantidad }} {{ repuesto.unidad_medida }}
+                    </div>
+                    <div class="text-muted small">
+                      {{ mov.fecha|date:"Y-m-d H:i" }} · {{ mov.referencia|default:"Sin referencia" }}
+                    </div>
+                    {% if mov.notas %}
+                      <div class="text-muted small">{{ mov.notas|truncatewords:18 }}</div>
+                    {% endif %}
+                  </div>
+                  <div class="text-end">
+                    <div class="text-muted small">
+                      Costo: ${{ mov.costo_unitario|default:repuesto.costo_unitario|floatformat:2 }}
+                    </div>
+                    {% if mov.realizado_por %}
+                      <div class="text-muted small">Por {{ mov.realizado_por.get_full_name|default:mov.realizado_por.username }}</div>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="alert alert-light mb-0" role="alert">
+            Aun no se han registrado movimientos para este repuesto. Empieza registrando una entrada o salida.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mt-1">
+  <div class="col-lg-7">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <h2 class="h6 text-uppercase text-muted mb-3">Estadisticas de movimientos</h2>
+        <div class="row g-3">
+          <div class="col-md-4">
+            <div class="p-3 bg-light rounded">
+              <div class="text-muted small text-uppercase">Entradas</div>
+              <div class="fw-semibold fs-5">{{ estadisticas_movimientos.entradas }}</div>
+              <div class="text-muted small">Valor: ${{ estadisticas_movimientos.valor_entradas|floatformat:2 }}</div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="p-3 bg-light rounded">
+              <div class="text-muted small text-uppercase">Salidas</div>
+              <div class="fw-semibold fs-5">{{ estadisticas_movimientos.salidas }}</div>
+              <div class="text-muted small">Valor: ${{ estadisticas_movimientos.valor_salidas|floatformat:2 }}</div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="p-3 bg-light rounded">
+              <div class="text-muted small text-uppercase">Stock actual</div>
+              <div class="fw-semibold fs-5">{{ repuesto.stock }} {{ repuesto.unidad_medida }}</div>
+              <div class="text-muted small">Disponible: {{ repuesto.stock_disponible }} {{ repuesto.unidad_medida }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <h2 class="h6 text-uppercase text-muted mb-3">Notas</h2>
+        <ul class="list-unstyled mb-0">
+          <li class="mb-3 d-flex">
+            <span class="me-3 text-primary"><i class="bi bi-lightning-charge"></i></span>
+            <span>Registra entradas tras recibir mercancia para mantener actualizados los costos.</span>
+          </li>
+          <li class="mb-3 d-flex">
+            <span class="me-3 text-primary"><i class="bi bi-shield-check"></i></span>
+            <span>Configura niveles de seguridad para recibir alertas de stock critico.</span>
+          </li>
+          <li class="d-flex">
+            <span class="me-3 text-primary"><i class="bi bi-bar-chart"></i></span>
+            <span>Monitoriza la rotacion con las estadisticas de entradas y salidas.</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,1 @@
+"""Vehículos app initialization."""

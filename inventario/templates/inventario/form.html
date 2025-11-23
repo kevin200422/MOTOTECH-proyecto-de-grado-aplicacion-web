@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block title %}{{ view.object|default_if_none:"Nuevo repuesto" }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-xl-9 col-lg-10">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div>
+        <h1 class="h3 mb-1">
+          {% if view.object %}
+            Editar repuesto
+          {% else %}
+            Nuevo repuesto
+          {% endif %}
+        </h1>
+        <p class="text-muted mb-0">Completa los datos técnicos, comerciales y logísticos del repuesto.</p>
+      </div>
+      <div class="d-flex gap-2">
+        <a class="btn btn-outline-secondary" href="{% url 'inventario:list' %}">
+          <i class="bi bi-arrow-left me-1"></i> Volver al inventario
+        </a>
+        {% if view.object %}
+          <a class="btn btn-secondary" href="{% url 'inventario:detail' view.object.pk %}">
+            <i class="bi bi-eye me-1"></i> Ver detalle
+          </a>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body">
+        <form method="post" novalidate>
+          {% csrf_token %}
+
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+              {% for error in form.non_field_errors %}
+                <div>{{ error }}</div>
+              {% endfor %}
+            </div>
+          {% endif %}
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label text-muted text-uppercase small" for="{{ form.nombre.id_for_label }}">Nombre</label>
+              {{ form.nombre }}
+              {% if form.nombre.errors %}
+                <div class="invalid-feedback d-block">{% for error in form.nombre.errors %}{{ error }}{% endfor %}</div>
+              {% endif %}
+            </div>
+            <div class="col-md-3">
+              <label class="form-label text-muted text-uppercase small" for="{{ form.codigo.id_for_label }}">Codigo</label>
+              {{ form.codigo }}
+              {% if form.codigo.errors %}
+                <div class="invalid-feedback d-block">{% for error in form.codigo.errors %}{{ error }}{% endfor %}</div>
+              {% endif %}
+            </div>
+            <div class="col-md-3">
+              <label class="form-label text-muted text-uppercase small" for="{{ form.categoria.id_for_label }}">Categoria</label>
+              {{ form.categoria }}
+              {% if form.categoria.errors %}
+                <div class="invalid-feedback d-block">{% for error in form.categoria.errors %}{{ error }}{% endfor %}</div>
+              {% endif %}
+            </div>
+
+            <div class="col-12">
+              <label class="form-label text-muted text-uppercase small" for="{{ form.descripcion.id_for_label }}">Descripcion</label>
+              {{ form.descripcion }}
+              {% if form.descripcion.errors %}
+                <div class="invalid-feedback d-block">{% for error in form.descripcion.errors %}{{ error }}{% endfor %}</div>
+              {% endif %}
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label text-muted text-uppercase small" for="{{ form.unidad_medida.id_for_label }}">Unidad de medida</label>
+              {{ form.unidad_medida }}
+              {% if form.unidad_medida.errors %}
+                <div class="invalid-feedback d-block">{% for error in form.unidad_medida.errors %}{{ error }}{% endfor %}</div>
+              {% endif %}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label text-muted text-uppercase small" for="{{ form.proveedor.id_for_label }}">Proveedor</label>
+              {{ form.proveedor }}
+              {% if form.proveedor.errors %}
+                <div class="invalid-feedback d-block">{% for error in form.proveedor.errors %}{{ error }}{% endfor %}</div>
+              {% endif %}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label text-muted text-uppercase small" for="{{ form.ubicacion.id_for_label }}">Ubicacion</label>
+              {{ form.ubicacion }}
+              {% if form.ubicacion.errors %}
+                <div class="invalid-feedback d-block">{% for error in form.ubicacion.errors %}{{ error }}{% endfor %}</div>
+              {% endif %}
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label text-muted text-uppercase small" for="{{ form.stock.id_for_label }}">Stock actual</label>
+              {{ form.stock }}
+              {% if form.stock.errors %}
+                <div class="invalid-feedback d-block">{% for error in form.stock.errors %}{{ error }}{% endfor %}</div>
+              {% endif %}
+            </div>
+            <div class="col-md-3">
+              <label class="form-label text-muted text-uppercase small" for="{{ form.stock_seguridad.id_for_label }}">Stock de seguridad</label>
+              {{ form.stock_seguridad }}
+              {% if form.stock_seguridad.errors %}
+                <div class="invalid-feedback d-block">{% for error in form.stock_seguridad.errors %}{{ error }}{% endfor %}</div>
+              {% endif %}
+            </div>
+            <div class="col-md-3">
+              <label class="form-label text-muted text-uppercase small" for="{{ form.stock_minimo.id_for_label }}">Stock minimo</label>
+              {{ form.stock_minimo }}
+              {% if form.stock_minimo.errors %}
+                <div class="invalid-feedback d-block">{% for error in form.stock_minimo.errors %}{{ error }}{% endfor %}</div>
+              {% endif %}
+            </div>
+            <div class="col-md-3">
+              <label class="form-label text-muted text-uppercase small" for="{{ form.stock_maximo.id_for_label }}">Stock maximo</label>
+              {{ form.stock_maximo }}
+              {% if form.stock_maximo.errors %}
+                <div class="invalid-feedback d-block">{% for error in form.stock_maximo.errors %}{{ error }}{% endfor %}</div>
+              {% endif %}
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label text-muted text-uppercase small" for="{{ form.costo_unitario.id_for_label }}">Costo unitario</label>
+              {{ form.costo_unitario }}
+              {% if form.costo_unitario.errors %}
+                <div class="invalid-feedback d-block">{% for error in form.costo_unitario.errors %}{{ error }}{% endfor %}</div>
+              {% endif %}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label text-muted text-uppercase small" for="{{ form.precio_venta.id_for_label }}">Precio de venta</label>
+              {{ form.precio_venta }}
+              {% if form.precio_venta.errors %}
+                <div class="invalid-feedback d-block">{% for error in form.precio_venta.errors %}{{ error }}{% endfor %}</div>
+              {% endif %}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label text-muted text-uppercase small" for="{{ form.tiempo_reposicion_dias.id_for_label }}">Reposicion (dias)</label>
+              {{ form.tiempo_reposicion_dias }}
+              {% if form.tiempo_reposicion_dias.errors %}
+                <div class="invalid-feedback d-block">{% for error in form.tiempo_reposicion_dias.errors %}{{ error }}{% endfor %}</div>
+              {% endif %}
+            </div>
+
+            <div class="col-12">
+              <div class="form-check form-switch mt-2">
+                {{ form.activo }}
+                <label class="form-check-label" for="{{ form.activo.id_for_label }}">Repuesto activo</label>
+              </div>
+              {% if form.activo.errors %}
+                <div class="invalid-feedback d-block">{% for error in form.activo.errors %}{{ error }}{% endfor %}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center mt-4">
+            <div class="text-muted small">
+              Revisa que los niveles de stock y costos sean correctos antes de guardar.
+            </div>
+            <div class="d-flex gap-2">
+              <a class="btn btn-outline-secondary" href="{% url 'inventario:list' %}">Cancelar</a>
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check2-circle me-1"></i> Guardar
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

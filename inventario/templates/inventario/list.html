@@ -1,0 +1,332 @@
+{% extends "base.html" %}
+
+{% block title %}Inventario{% endblock %}
+
+{% block extra_head %}
+<style>
+.stat-card {
+  border: 0;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(25, 135, 84, 0.08), rgba(13, 110, 253, 0.08));
+}
+.stat-card .icon-circle {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.78rem;
+}
+.status-pill.ok {
+  background: rgba(25, 135, 84, 0.12);
+  color: #198754;
+}
+.status-pill.critico {
+  background: rgba(220, 53, 69, 0.12);
+  color: #dc3545;
+}
+.status-pill.sin_stock {
+  background: rgba(108, 117, 125, 0.18);
+  color: #6c757d;
+}
+.status-pill.saturado {
+  background: rgba(255, 193, 7, 0.18);
+  color: #ffc107;
+}
+.table thead th {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #6c757d;
+  border-top: 0;
+  border-bottom-width: 1px;
+}
+.table tbody tr td {
+  vertical-align: middle;
+}
+.badge-soft {
+  background-color: rgba(13, 110, 253, 0.15);
+  color: #0d6efd;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-4">
+  <div>
+    <h1 class="h3 mb-1">Inventario</h1>
+    <p class="text-muted mb-0">Controla tus repuestos con indicadores clave, niveles de stock y valoracion economica.</p>
+  </div>
+  <div class="d-flex gap-2">
+    {% if has_filters %}
+      <a class="btn btn-outline-secondary" href="{% url 'inventario:list' %}">
+        <i class="bi bi-x-circle me-1"></i> Limpiar filtros
+      </a>
+    {% endif %}
+    <a class="btn btn-primary" href="{% url 'inventario:create' %}">
+      <i class="bi bi-plus-circle me-1"></i> Registrar repuesto
+    </a>
+  </div>
+</div>
+
+{% if not inventario_migrado %}
+  <div class="alert alert-warning">
+    {{ mensaje_bd }}<br>
+    <code>python manage.py makemigrations inventario</code> y luego
+    <code>python manage.py migrate</code>
+  </div>
+{% endif %}
+
+<div class="row g-3 mb-4">
+  <div class="col-12 col-lg-3">
+    <div class="card stat-card shadow-sm h-100">
+      <div class="card-body d-flex align-items-center justify-content-between">
+        <div>
+          <div class="text-muted text-uppercase small mb-1">Referencias</div>
+          <div class="h4 mb-0">{{ summary.items }}</div>
+          <div class="text-muted small">{{ summary.stock_total }} unidades</div>
+        </div>
+        <span class="icon-circle bg-success text-white">
+          <i class="bi bi-box-seam"></i>
+        </span>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-lg-3">
+    <div class="card stat-card shadow-sm h-100">
+      <div class="card-body d-flex align-items-center justify-content-between">
+        <div>
+          <div class="text-muted text-uppercase small mb-1">Valor inventario</div>
+          <div class="h4 mb-0">${{ summary.valor_inventario|floatformat:2 }}</div>
+        </div>
+        <span class="icon-circle bg-primary text-white">
+          <i class="bi bi-cash-coin"></i>
+        </span>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-lg-3">
+    <div class="card stat-card shadow-sm h-100">
+      <div class="card-body d-flex align-items-center justify-content-between">
+        <div>
+          <div class="text-muted text-uppercase small mb-1">Potencial venta</div>
+          <div class="h4 mb-0">${{ summary.valor_potencial|floatformat:2 }}</div>
+        </div>
+        <span class="icon-circle bg-info text-white">
+          <i class="bi bi-graph-up"></i>
+        </span>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-lg-3">
+    <div class="card stat-card shadow-sm h-100">
+      <div class="card-body d-flex align-items-center justify-content-between">
+        <div>
+          <div class="text-muted text-uppercase small mb-1">Margen promedio</div>
+          <div class="h4 mb-0">{{ summary.margen_promedio|floatformat:1 }}%</div>
+          <div class="text-muted small">{{ summary.criticos }} criticos / {{ summary.sin_stock }} sin stock</div>
+        </div>
+        <span class="icon-circle bg-warning text-white">
+          <i class="bi bi-clipboard-pulse"></i>
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-body">
+    <form method="get" class="row gy-3 gx-3 align-items-end">
+      <div class="col-12 col-xl-4">
+        <label class="form-label text-muted text-uppercase small mb-1" for="buscar">Buscar</label>
+        <div class="input-group input-group-sm">
+          <span class="input-group-text"><i class="bi bi-search"></i></span>
+          <input id="buscar" type="search" name="q" value="{{ search_query }}" class="form-control" placeholder="Codigo, nombre, descripcion o proveedor">
+        </div>
+      </div>
+      <div class="col-12 col-md-4 col-xl-3">
+        <label class="form-label text-muted text-uppercase small mb-1" for="categoria">Categoria</label>
+        <select id="categoria" class="form-select form-select-sm" name="categoria">
+          <option value="">Todas</option>
+          {% for value, label in categoria_options %}
+            <option value="{{ value }}" {% if categoria_filter == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-12 col-md-4 col-xl-3">
+        <label class="form-label text-muted text-uppercase small mb-1" for="estado">Estado</label>
+        <select id="estado" class="form-select form-select-sm" name="estado">
+          {% for value, label in estado_options %}
+            <option value="{{ value }}" {% if estado_filter == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-12 col-md-4 col-xl-2">
+        <label class="form-label text-muted text-uppercase small mb-1" for="orden">Ordenar</label>
+        <select id="orden" class="form-select form-select-sm" name="o">
+          <option value="">Nombre (A-Z)</option>
+          <option value="-nombre" {% if order == "-nombre" %}selected{% endif %}>Nombre (Z-A)</option>
+          <option value="codigo" {% if order == "codigo" %}selected{% endif %}>Codigo (A-Z)</option>
+          <option value="-codigo" {% if order == "-codigo" %}selected{% endif %}>Codigo (Z-A)</option>
+          <option value="-stock" {% if order == "-stock" %}selected{% endif %}>Stock (desc)</option>
+          <option value="stock" {% if order == "stock" %}selected{% endif %}>Stock (asc)</option>
+          <option value="-valor" {% if order == "-valor" %}selected{% endif %}>Valor inventario (desc)</option>
+          <option value="valor" {% if order == "valor" %}selected{% endif %}>Valor inventario (asc)</option>
+          <option value="-margen" {% if order == "-margen" %}selected{% endif %}>Margen (desc)</option>
+          <option value="margen" {% if order == "margen" %}selected{% endif %}>Margen (asc)</option>
+        </select>
+      </div>
+      <div class="col-12 col-xl-12 text-end">
+        <button type="submit" class="btn btn-sm btn-primary">
+          <i class="bi bi-arrow-right-circle me-1"></i> Aplicar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Codigo</th>
+            <th>Repuesto</th>
+            <th>Categoria</th>
+            <th class="text-center">Stock</th>
+            <th class="text-center">Umbral</th>
+            <th>Costos</th>
+            <th>Valores</th>
+            <th>Proveedor</th>
+            <th>Ubicacion</th>
+            <th>Estado</th>
+            <th class="text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for repuesto in repuestos %}
+            <tr>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <span class="badge text-bg-primary text-uppercase">{{ repuesto.codigo }}</span>
+                  <button type="button" class="btn btn-link btn-sm text-decoration-none p-0 copy-codigo" data-copy="{{ repuesto.codigo }}">
+                    <i class="bi bi-clipboard"></i>
+                  </button>
+                </div>
+              </td>
+              <td>
+                <div class="fw-semibold">
+                  <a class="text-decoration-none" href="{% url 'inventario:detail' repuesto.pk %}">{{ repuesto.nombre }}</a>
+                </div>
+                <div class="text-muted small">{{ repuesto.descripcion|default:"Sin descripcion"|truncatewords:12 }}</div>
+              </td>
+              <td><span class="badge badge-soft text-uppercase">{{ repuesto.get_categoria_display }}</span></td>
+              <td class="text-center">
+                <div class="fw-semibold">{{ repuesto.stock }} {{ repuesto.unidad_medida }}</div>
+                <div class="text-muted small">Seguridad: {{ repuesto.stock_seguridad }}</div>
+              </td>
+              <td class="text-center">
+                <div class="text-muted small">Min: {{ repuesto.stock_minimo }}</div>
+                <div class="text-muted small">Max: {{ repuesto.stock_maximo|default:"-" }}</div>
+                <div class="text-muted small">Reposicion: {{ repuesto.tiempo_reposicion_dias }} dias</div>
+              </td>
+              <td>
+                <div class="text-muted small">Costo: ${{ repuesto.costo_unitario|floatformat:2 }}</div>
+                <div class="text-muted small">Venta: ${{ repuesto.precio_venta|floatformat:2 }}</div>
+                <div class="text-muted small">Margen: ${{ repuesto.margen_unitario_calc|floatformat:2 }} ({{ repuesto.margen_porcentaje_calc|floatformat:1 }}%)</div>
+              </td>
+              <td>
+                <div class="text-muted small">Inventario: ${{ repuesto.valor_inventario_calc|floatformat:2 }}</div>
+                <div class="text-muted small">Potencial: ${{ repuesto.valor_potencial_calc|floatformat:2 }}</div>
+                <div class="text-muted small">Disponible: {{ repuesto.stock_disponible }} {{ repuesto.unidad_medida }}</div>
+              </td>
+              <td>
+                <div class="fw-medium">{{ repuesto.proveedor|default:"-" }}</div>
+              </td>
+              <td>
+                <div class="text-muted small">{{ repuesto.ubicacion|default:"-" }}</div>
+              </td>
+              <td>
+                <span class="status-pill {{ repuesto.estado_stock }}">
+                  {% if repuesto.estado_stock == "critico" %}
+                    <i class="bi bi-exclamation-triangle-fill"></i> Critico
+                  {% elif repuesto.estado_stock == "sin_stock" %}
+                    <i class="bi bi-x-circle"></i> Sin stock
+                  {% elif repuesto.estado_stock == "saturado" %}
+                    <i class="bi bi-exclamation-diamond"></i> Saturado
+                  {% else %}
+                    <i class="bi bi-check-circle"></i> OK
+                  {% endif %}
+                </span>
+              </td>
+              <td class="text-center">
+                <div class="btn-group btn-group-sm mb-1">
+                  <a class="btn btn-outline-primary" href="{% url 'inventario:detail' repuesto.pk %}" title="Ver detalle">
+                    <i class="bi bi-eye"></i>
+                  </a>
+                  <a class="btn btn-outline-secondary" href="{% url 'inventario:update' repuesto.pk %}" title="Editar repuesto">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+                  <a class="btn btn-outline-danger" href="{% url 'inventario:delete' repuesto.pk %}" title="Eliminar">
+                    <i class="bi bi-trash"></i>
+                  </a>
+                </div>
+                <div>
+                  <a class="btn btn-link btn-sm text-decoration-none" href="{% url 'inventario:movement_create' repuesto.pk %}">
+                    <i class="bi bi-plus-circle me-1"></i> Registrar movimiento
+                  </a>
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="11" class="text-center py-5">
+                <div class="text-muted">
+                  <i class="bi bi-box display-6 d-block mb-2"></i>
+                  No hay repuestos registrados o no coinciden con los filtros.
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  document.querySelectorAll(".copy-codigo").forEach(function (btn) {
+    btn.addEventListener("click", function (event) {
+      const value = event.currentTarget.getAttribute("data-copy");
+      if (!value) {
+        return;
+      }
+      navigator.clipboard.writeText(value).then(function () {
+        const icon = event.currentTarget.querySelector("i");
+        if (!icon) {
+          return;
+        }
+        const original = icon.className;
+        icon.className = "bi bi-clipboard-check text-success";
+        setTimeout(function () {
+          icon.className = original;
+        }, 1500);
+      });
+    });
+  });
+});
+</script>
+{% endblock %}

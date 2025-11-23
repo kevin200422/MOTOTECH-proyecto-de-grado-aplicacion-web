@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Eliminar cliente{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-7 col-xl-6">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <h1 class="h4 mb-3">¿Eliminar a {{ object.nombre }}?</h1>
+        <p class="text-muted">
+          Esta acción eliminará al cliente del sistema. Los registros asociados (citas, vehículos) conservarán la referencia histórica,
+          pero no podrás crear nuevos seguimientos para este cliente.
+        </p>
+
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <div class="p-3 bg-light rounded">
+              <div class="text-muted small text-uppercase">Teléfono</div>
+              <div class="fw-semibold">{{ object.telefono|default:"Sin registrar" }}</div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="p-3 bg-light rounded">
+              <div class="text-muted small text-uppercase">Email</div>
+              <div class="fw-semibold">{{ object.email|default:"Sin registrar" }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="alert alert-warning" role="alert">
+          Esta acción no se puede deshacer.
+        </div>
+
+        <form method="post" class="d-flex gap-2">
+          {% csrf_token %}
+          <button class="btn btn-danger" type="submit">Eliminar definitivamente</button>
+          <a class="btn btn-outline-secondary" href="{% url 'clientes:detail' object.pk %}">Cancelar</a>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
